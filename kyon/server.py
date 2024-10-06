@@ -66,16 +66,16 @@ model_params = {
     # The following line is an example to showcase StaticText.
     "title": mesa.visualization.StaticText("Parameters:"),
     # "grass": mesa.visualization.Checkbox("Grass Enabled", True),
-    "grass_regrowth_time": mesa.visualization.Slider("Grass Regrowth Time", 1, 1, 10),
+    "grass_regrowth_time": mesa.visualization.Slider("Grass Regrowth Time", 2, 1, 10),  
     "initial_sheep": mesa.visualization.Slider(
-        "Initial Kyon Population", 250, 10, 300
-    ),
+        "Initial Kyon Population", 246, 10, 300 
+    ), 
     "sheep_reproduce": mesa.visualization.Slider(
         "Kyon Reproduction Rate", 0.005, 0.001, 1.0, 0.001
     ),
     "initial_wolves": mesa.visualization.Slider("Initial Hunter Population", 10, 0, 100),
     "capture_success_rate": mesa.visualization.Slider(
-        "Kyon Capture Success Rate", 0.1, 0.01, 1.0, 0.01
+        "Kyon Capture Success Rate", 0.15, 0.01, 1.0, 0.01
     ),
     "simuration_counter": mesa.visualization.Slider("Simuration Counter", 1, 1, 10),
     # "wolf_reproduce": mesa.visualization.Slider(
@@ -93,7 +93,7 @@ model_params = {
 }
 
 server = mesa.visualization.ModularServer(
-    WolfSheep, [], "Kyon Breeding Simulation", model_params
-    # WolfSheep, [canvas_element, chart_element, chart_element2, chart_element3], "Kyon Breeding Simulation", model_params
+    #  WolfSheep, [], "Kyon Breeding Simulation", model_params
+    WolfSheep, [canvas_element, chart_element, chart_element2, chart_element3], "Kyon Breeding Simulation", model_params
 )
-server.port = 8522
+server.port = 8526
