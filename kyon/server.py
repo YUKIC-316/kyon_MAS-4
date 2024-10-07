@@ -1,99 +1,112 @@
 import mesa
-
-from kyon.agents import Wolf, Sheep, GrassPatch
-from kyon.model import WolfSheep
-
-
-def wolf_sheep_portrayal(agent):
-    if agent is None:
-        return
-
-    portrayal = {}
-
-    if type(agent) is Sheep:
-        portrayal["Shape"] = "kyon/resources/kyon.png"
-        portrayal["scale"] = 0.9
-        portrayal["Layer"] = 1
-        portrayal["text"] = round(agent.after_birth, 1)
-        portrayal["text_color"] = "Black"
+from mesa.visualization.modules import CanvasGrid, ChartModule
+from mesa.visualization.ModularVisualization import ModularServer
+from mesa.visualization.UserParam import Slider, Choice
+from kyon.model import KyonModel
+from kyon.agents import Kyon, Trap, GrassPatch, FoodResource
 
 
-    elif type(agent) is Wolf:
-        portrayal["Shape"] = "kyon/resources/hunter.png"
-        portrayal["scale"] = 0.9
-        portrayal["Layer"] = 2
-        portrayal["text"] = round(agent.energy, 1)
-        portrayal["text_color"] = "White"
-
-    elif type(agent) is GrassPatch:
-        if agent.fully_grown:
-            portrayal["Color"] = ["#00FF00", "#00CC00", "#009900"]
+def agent_portrayal(agent):
+    """
+    エージェントの視覚的な表現を設定する関数。
+    キョン、罠、植生、食物資源エリアのそれぞれに対して異なるアイコンや色を指定します。
+    """
+    if isinstance(agent, Kyon):
+        portrayal = {
+            "Shape": "kyon/resources/kyon.png",  # キョンの画像
+            "scale": 0.9,
+            "Layer": 1
+        }
+    elif isinstance(agent, Trap):
+        portrayal = {
+            "Shape": "kyon/resources/hunter.png",  # 罠の画像
+            "scale": 0.9,
+            "Layer": 2
+        }
+    elif isinstance(agent, GrassPatch):
+        # 植生の密度に基づく色分け
+        if agent.density == "dense":
+            portrayal = {
+                "Shape": "rect",
+                "Color": "darkgreen",  # 濃い植生
+                "Layer": 0,
+                "w": 1,
+                "h": 1
+            }
+        elif agent.density == "medium":
+            portrayal = {
+                "Shape": "rect",
+                "Color": "green",  # 中密度の植生
+                "Layer": 0,
+                "w": 1,
+                "h": 1
+            }
         else:
-            portrayal["Color"] = ["#84e184", "#adebad", "#d6f5d6"]
-        portrayal["Shape"] = "rect"
-        portrayal["Filled"] = "true"
-        portrayal["Layer"] = 0
-        portrayal["w"] = 1
-        portrayal["h"] = 1
-
+            portrayal = {
+                "Shape": "rect",
+                "Color": "lightgreen",  # 薄い植生
+                "Layer": 0,
+                "w": 1,
+                "h": 1
+            }
+    elif isinstance(agent, FoodResource):
+        # 食物資源エリアの密度に基づく色分け
+        if agent.density == "dense":
+            portrayal = {
+                "Shape": "rect",
+                "Color": "yellowgreen",  # 濃い密度の食物資源エリア
+                "Layer": 0,
+                "w": 1,
+                "h": 1
+            }
+        elif agent.density == "medium":
+            portrayal = {
+                "Shape": "rect",
+                "Color": "lightyellow",  # 中密度の食物資源エリア
+                "Layer": 0,
+                "w": 1,
+                "h": 1
+            }
+        else:
+            portrayal = {
+                "Shape": "rect",
+                "Color": "yellow",  # 薄い密度の食物資源エリア
+                "Layer": 0,
+                "w": 1,
+                "h": 1
+            }
     return portrayal
 
 
-canvas_element = mesa.visualization.CanvasGrid(wolf_sheep_portrayal, 40, 40, 1000, 1000)
-chart_element = mesa.visualization.ChartModule(
-    [
-        # {"Label": "Wolves", "Color": "#AA0000"},
-        {"Label": "Kyon", "Color": "#666666"},
-        # {"Label": "EatenGrass", "Color": "#00AA00"},
-    ]
-)
+# キャンバスの設定
+canvas_element = CanvasGrid(agent_portrayal, 40, 40, 500, 500)
 
-chart_element2 = mesa.visualization.ChartModule(
-    [
-        {"Label": "BornKyon", "Color": "#00AA00"},
-        {"Label": "DeadinLifeKyon", "Color": "#666666"},
-        {"Label": "HuntedKyon", "Color": "#AA0000"},
-    ]
-)
+# グラフモジュールの設定（キョンの数と罠の数をグラフ化）
+chart_element = ChartModule([
+    {"Label": "Kyons", "Color": "green"},
+    {"Label": "Traps", "Color": "red"}
+])
 
-chart_element3 = mesa.visualization.ChartModule(
-    [
-        {"Label": "EatenGrass", "Color": "#00AA00"},
-    ]
-)
-
+# インタラクティブに選べるシミュレーションのパラメータ設定
 model_params = {
-    # The following line is an example to showcase StaticText.
-    "title": mesa.visualization.StaticText("Parameters:"),
-    # "grass": mesa.visualization.Checkbox("Grass Enabled", True),
-    "grass_regrowth_time": mesa.visualization.Slider("Grass Regrowth Time", 2, 1, 10),  
-    "initial_sheep": mesa.visualization.Slider(
-        "Initial Kyon Population", 246, 10, 300 
-    ), 
-    "sheep_reproduce": mesa.visualization.Slider(
-        "Kyon Reproduction Rate", 0.005, 0.001, 1.0, 0.001
-    ),
-    "initial_wolves": mesa.visualization.Slider("Initial Hunter Population", 10, 0, 100),
-    "capture_success_rate": mesa.visualization.Slider(
-        "Kyon Capture Success Rate", 0.15, 0.01, 1.0, 0.01
-    ),
-    "simuration_counter": mesa.visualization.Slider("Simuration Counter", 1, 1, 10),
-    # "wolf_reproduce": mesa.visualization.Slider(
-    #     "Hunter Reproduction Rate",
-    #     0.0,
-    #     0.0,
-    #     1.0,
-    #     0.01,
-    #     description="The rate at which hunter agents reproduce.",
-    # ),
-    # "wolf_gain_from_food": mesa.visualization.Slider(
-    #     "Hunter Gain From Food Rate", 0, 0, 50
-    # ),
-    # "sheep_gain_from_food": mesa.visualization.Slider("Kyon Gain From Food", 4, 1, 10),
+    "initial_kyon": Slider("Initial Kyon Population", 100, 10, 300, 10),
+    "initial_traps": Slider("Trap Count", 10, 1, 50, 1),
+    "trap_placement": Choice("Trap Placement Strategy", ["random", "sparse", "food"]),  # 罠の配置パターンの選択
+    "grass_regrowth_time": Slider("Grass Regrowth Time", 3, 1, 10, 1),
+    "kyon_reproduce": Slider("Kyon Reproduction Rate", 0.005, 0.001, 1.0, 0.001),
+    "capture_success_rate": Slider("Capture Success Rate", 0.3, 0.1, 1.0, 0.1),
 }
 
-server = mesa.visualization.ModularServer(
-    #  WolfSheep, [], "Kyon Breeding Simulation", model_params
-    WolfSheep, [canvas_element, chart_element, chart_element2, chart_element3], "Kyon Breeding Simulation", model_params
+# サーバー設定
+server = ModularServer(
+    KyonModel,
+    [canvas_element, chart_element],
+    "Kyon Simulation",
+    model_params
 )
-server.port = 8526
+
+# サーバーポートの設定
+server.port = 8527
+
+# サーバーの起動
+server.launch()

@@ -2,139 +2,115 @@ import mesa
 from kyon.random_walk import RandomWalker
 
 
-class Sheep(RandomWalker):
+class Kyon(RandomWalker):
     """
-    A sheep that walks around, reproduces (asexually) and gets eaten.
-
-    The init is the same as the RandomWalker.
+    キョンエージェントの動きと生死に関するロジックを含むクラス。
+    植生の密度、食物資源エリア、罠などの要素に基づいた移動と行動を行う。
     """
-
-    energy = None
-    after_birth = 0
-
-    def __init__(self, unique_id, pos, model, moore, energy=None, sheep_reproduce_count=False, after_birth=0, is_eat=False):
+    def __init__(self, unique_id, pos, model, moore=True, energy=None, birth_probability=0.1, death_probability=0.1):
         super().__init__(unique_id, pos, model, moore=moore)
         self.energy = energy
-        self.sheep_reproduce_count=False
-        self.after_birth=after_birth
-        self.is_eat=False
+        self.is_trapped = False  # 罠にかかっているかどうかのフラグ
+        self.birth_probability = birth_probability  # 出産後の死亡確率
+        self.death_probability = death_probability  # 自然死の確率
+        self.after_birth = 0  # 出産後の時間
 
     def step(self):
-        """
-        A model step. Move, then eat grass and reproduce.
-        """
-        self.random_move()
-        living = True
-        self.sheep_reproduce_count = False
+        # 現在の位置の植生パッチを取得
+        this_cell = self.model.grid.get_cell_list_contents([self.pos])
+        grass_patch = [obj for obj in this_cell if isinstance(obj, GrassPatch)][0]
+
+        # 出産後の時間を増加
         self.after_birth += 1
-        self.is_eat=False
 
-        if self.model.grass:
-            # Reduce energy
-            self.energy -= 1
+        # 食物資源エリアとの距離を計算
+        distance_to_food = self.model.get_distance_to_food(self.pos)
 
-            # If there is grass available, eat it
-            this_cell = self.model.grid.get_cell_list_contents([self.pos])
-            grass_patch = [obj for obj in this_cell if isinstance(obj, GrassPatch)][0]
-            if grass_patch.fully_grown:
-                self.energy += self.model.sheep_gain_from_food
-                grass_patch.fully_grown = False
-                self.is_eat=True
+        # 移動ロジック（食物資源エリアに基づく）
+        if distance_to_food <= 5:
+            # 5マス以内の場合、80%の確率で食物資源エリアに向かう
+            move_towards_food = self.random.random() < 0.8
+        else:
+            # 5マスより離れている場合、20%の確率で食物資源エリアに向かう
+            move_towards_food = self.random.random() < 0.2
 
-            # # Death
-            # if self.energy < 0:
-            #     self.model.grid.remove_agent(self)
-            #     self.model.schedule.remove(self)
-            #     living = False
+        if move_towards_food:
+            self.move_towards(self.model.food_location)
+        else:
+            # 植生密度に基づく移動速度の調整
+            if grass_patch.density == "dense":
+                if self.random.random() < 0.5:  # 濃い植生では50%の確率で移動
+                    self.random_move()
+            elif grass_patch.density == "medium":
+                if self.random.random() < 0.75:  # 中密度植生では75%の確率で移動
+                    self.random_move()
+            else:
+                self.random_move()  # 薄い植生では通常通り移動
 
-        # Death（年齢が高くなるほど死亡率があがる）
-        if self.random.random() < (self.model.sheep_reproduce/5)*(self.after_birth/540):
+        # 罠にかかった場合の処理
+        traps_in_cell = [obj for obj in this_cell if isinstance(obj, Trap)]
+        if traps_in_cell:
+            trap = traps_in_cell[0]
+            # 食物資源エリアにいるかどうかを確認
+            in_food_area = self.model.is_in_food_area(self.pos)
+            capture_probability = trap.get_capture_probability(grass_patch.density, in_food_area=in_food_area)
+            if self.random.random() < capture_probability:
+                self.is_trapped = True
+                self.model.grid.remove_agent(self)
+                self.model.schedule.remove(self)
+                return  # キョンが罠にかかって死んだ場合、ここで終了
+
+        # 自然死の処理（一定の確率で死亡）
+        if self.random.random() < self.death_probability:
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
-            living = False
+            return  # 自然死の場合、ここで終了
 
-        # Born
-        if living and self.after_birth >= 150 and self.random.random() < self.model.sheep_reproduce/2:
-            # Create a new sheep:
-            if self.model.grass:
-                self.energy /= 2
-            lamb = Sheep(
-                self.model.next_id(), self.pos, self.model, self.moore, self.energy, self.sheep_reproduce_count, 0
-            )
-            self.model.grid.place_agent(lamb, self.pos)
-            self.model.schedule.add(lamb)
-            self.sheep_reproduce_count = True
-
-
-class Wolf(RandomWalker):
-    """
-    A wolf that walks around, reproduces (asexually) and eats sheep.
-    """
-
-    energy = None
-
-    def __init__(self, unique_id, pos, model, moore, energy=None, is_hunt=False):
-        super().__init__(unique_id, pos, model, moore=moore)
-        self.energy = energy
-        self.is_hunt = False
-
-    def step(self):
-        self.random_move()
-        self.energy -= 1
-        self.is_hunt = False
-
-        # If there are sheep present, eat one
-        x, y = self.pos
-        this_cell = self.model.grid.get_cell_list_contents([self.pos])
-        sheep = [obj for obj in this_cell if isinstance(obj, Sheep)]
-        if len(sheep) > 0:
-            sheep_to_eat = self.random.choice(sheep)
-            self.energy += self.model.wolf_gain_from_food
-
-            # Kill the Kyon
-            if self.random.random() < self.model.capture_success_rate:
-                self.model.grid.remove_agent(sheep_to_eat)
-                self.model.schedule.remove(sheep_to_eat)
-                self.is_hunt = True
-
-        # Death or reproduction
-        # if self.energy < 0:
-        #     self.model.grid.remove_agent(self)
-        #     self.model.schedule.remove(self)
-        # else:
-        #     if self.random.random() < self.model.wolf_reproduce:
-        #         # Create a new wolf cub
-        #         self.energy /= 2
-        #         cub = Wolf(
-        #             self.model.next_id(), self.pos, self.model, self.moore, self.energy
-        #         )
-        #         self.model.grid.place_agent(cub, cub.pos)
-        #         self.model.schedule.add(cub)
+        # 出産後に一定の確率で死亡
+        if self.random.random() < self.birth_probability:
+            self.model.grid.remove_agent(self)
+            self.model.schedule.remove(self)
+            return  # 出産後に死亡した場合、ここで終了
 
 
 class GrassPatch(mesa.Agent):
     """
-    A patch of grass that grows at a fixed rate and it is eaten by sheep
+    植生パッチエージェント。各パッチは成長し、キョンが食べることができる。
     """
-
-    def __init__(self, unique_id, pos, model, fully_grown, countdown):
-        """
-        Creates a new patch of grass
-
-        Args:
-            grown: (boolean) Whether the patch of grass is fully grown or not
-            countdown: Time for the patch of grass to be fully grown again
-        """
+    def __init__(self, unique_id, model, fully_grown, countdown, density):
         super().__init__(unique_id, model)
-        self.fully_grown = fully_grown
-        self.countdown = countdown
-        self.pos = pos
+        self.fully_grown = fully_grown  # 草が完全に成長しているかどうか
+        self.countdown = countdown  # 草の成長にかかる時間
+        self.density = density  # 植生の密度（濃い、普通、薄い）
 
     def step(self):
+        # 草が完全に成長していない場合、カウントダウンを減少
         if not self.fully_grown:
             if self.countdown <= 0:
-                # Set as fully grown
                 self.fully_grown = True
-                self.countdown = self.model.grass_regrowth_time
+                self.countdown = self.model.grass_regrowth_time  # 成長時間をリセット
             else:
                 self.countdown -= 1
+
+
+class Trap(mesa.Agent):
+    """
+    罠エージェント。キョンを捕まえるための罠。
+    """
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+
+    def get_capture_probability(self, vegetation_density, in_food_area=False):
+        """
+        罠にかかる確率を植生密度と食物資源エリアの情報を基に計算する。
+        """
+        base_probability = {
+            "dense": 0.3,
+            "medium": 0.5,
+            "sparse": 0.7
+        }
+
+        if in_food_area:
+            # 食物資源エリアにいる場合は捕獲確率が高くなる
+            return base_probability[vegetation_density] + 0.1
+        return base_probability[vegetation_density]
