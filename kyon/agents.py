@@ -1,116 +1,154 @@
 import mesa
 from kyon.random_walk import RandomWalker
 
-
 class Kyon(RandomWalker):
     """
-    キョンエージェントの動きと生死に関するロジックを含むクラス。
-    植生の密度、食物資源エリア、罠などの要素に基づいた移動と行動を行う。
+    草原を歩き回り、繁殖し（無性繁殖）、捕食されるキョン。
+    初期化メソッドはRandomWalkerと同じです。
     """
-    def __init__(self, unique_id, pos, model, moore=True, energy=None, birth_probability=0.1, death_probability=0.1):
+    
+    #energy = None
+    after_birth = 0
+
+    def __init__(self, unique_id, pos, model, moore,  kyon_reproduce_count=False, after_birth=0):
         super().__init__(unique_id, pos, model, moore=moore)
-        self.energy = energy
-        self.is_trapped = False  # 罠にかかっているかどうかのフラグ
-        self.birth_probability = birth_probability  # 出産後の死亡確率
-        self.death_probability = death_probability  # 自然死の確率
-        self.after_birth = 0  # 出産後の時間
+        #self.energy = energy
+        self.kyon_reproduce_count = kyon_reproduce_count
+        self.after_birth = after_birth
+        #self.is_eat = False
 
     def step(self):
-        # 現在の位置の植生パッチを取得
-        this_cell = self.model.grid.get_cell_list_contents([self.pos])
-        grass_patch = [obj for obj in this_cell if isinstance(obj, GrassPatch)][0]
-
-        # 出産後の時間を増加
+        """
+        モデルのステップ。植生の密度に応じて移動し、草を食べ、繁殖します。
+        """
+        self.kyon_reproduce_count = False
         self.after_birth += 1
+        #self.is_eat = False
+        
+        # 植生の密度に基づいて移動マス数を決定する
+        current_cell = self.model.grid.get_cell_list_contents([self.pos])
+        vegetation_density = [obj for obj in current_cell if isinstance(obj, VegetationDensity)][0]
+        
+        if vegetation_density.density == "dense":  # 濃い植生
+            move_steps = 1
+        elif vegetation_density.density == "normal":  # 普通の植生
+            move_steps = 2
+        else:  # 薄い植生
+            move_steps = 3
 
-        # 食物資源エリアとの距離を計算
-        distance_to_food = self.model.get_distance_to_food(self.pos)
+        # ランダムに指定されたマス数だけ移動
+        self.random_move(move_steps=move_steps)
 
-        # 移動ロジック（食物資源エリアに基づく）
-        if distance_to_food <= 5:
-            # 5マス以内の場合、80%の確率で食物資源エリアに向かう
-            move_towards_food = self.random.random() < 0.8
-        else:
-            # 5マスより離れている場合、20%の確率で食物資源エリアに向かう
-            move_towards_food = self.random.random() < 0.2
+        living = True
 
-        if move_towards_food:
-            self.move_towards(self.model.food_location)
-        else:
-            # 植生密度に基づく移動速度の調整
-            if grass_patch.density == "dense":
-                if self.random.random() < 0.5:  # 濃い植生では50%の確率で移動
-                    self.random_move()
-            elif grass_patch.density == "medium":
-                if self.random.random() < 0.75:  # 中密度植生では75%の確率で移動
-                    self.random_move()
-            else:
-                self.random_move()  # 薄い植生では通常通り移動
+        #if self.model.grass:
+            # エネルギーを減少させる
+            #self.energy -= 1
+            
+            # もし草があれば、食べる
+            #this_cell = self.model.grid.get_cell_list_contents([self.pos])
+            #grass_patch = [obj for obj in this_cell if isinstance(obj, GrassPatch)][0]
+            #if grass_patch.fully_grown:
+                #self.energy += self.model.kyon_gain_from_food
+                #grass_patch.fully_grown = False
+                #self.is_eat = True
+                
+        # 死亡
+        # if self.energy <= 0:
+        #     self.model.grid.remove_agent(self)
+        #     self.model.schedule.remove(self)
+        #     living = False
 
-        # 罠にかかった場合の処理
-        traps_in_cell = [obj for obj in this_cell if isinstance(obj, Trap)]
-        if traps_in_cell:
-            trap = traps_in_cell[0]
-            # 食物資源エリアにいるかどうかを確認
-            in_food_area = self.model.is_in_food_area(self.pos)
-            capture_probability = trap.get_capture_probability(grass_patch.density, in_food_area=in_food_area)
-            if self.random.random() < capture_probability:
-                self.is_trapped = True
-                self.model.grid.remove_agent(self)
-                self.model.schedule.remove(self)
-                return  # キョンが罠にかかって死んだ場合、ここで終了
-
-        # 自然死の処理（一定の確率で死亡）
-        if self.random.random() < self.death_probability:
+        # 死亡（年齢が高くなるほど死亡率があがる）
+        if self.random.random() < (self.model.kyon_reproduce / 5) * (self.after_birth / 540):
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
-            return  # 自然死の場合、ここで終了
+            living = False
 
-        # 出産後に一定の確率で死亡
-        if self.random.random() < self.birth_probability:
-            self.model.grid.remove_agent(self)
-            self.model.schedule.remove(self)
-            return  # 出産後に死亡した場合、ここで終了
-
-
-class GrassPatch(mesa.Agent):
-    """
-    植生パッチエージェント。各パッチは成長し、キョンが食べることができる。
-    """
-    def __init__(self, unique_id, model, fully_grown, countdown, density):
-        super().__init__(unique_id, model)
-        self.fully_grown = fully_grown  # 草が完全に成長しているかどうか
-        self.countdown = countdown  # 草の成長にかかる時間
-        self.density = density  # 植生の密度（濃い、普通、薄い）
-
-    def step(self):
-        # 草が完全に成長していない場合、カウントダウンを減少
-        if not self.fully_grown:
-            if self.countdown <= 0:
-                self.fully_grown = True
-                self.countdown = self.model.grass_regrowth_time  # 成長時間をリセット
-            else:
-                self.countdown -= 1
+        # 繁殖
+        if living and self.after_birth >= 150 and self.random.random() < self.model.kyon_reproduce / 2:
+            # 新しい羊を生成します
+            #if self.model.grass:
+                #self.energy /= 2
+            lamb = Kyon(
+                self.model.next_id(), self.pos, self.model, self.moore, self.energy, self.kyon_reproduce_count, 0
+            )
+            self.model.grid.place_agent(lamb, self.pos)
+            self.model.schedule.add(lamb)
+            self.kyon_reproduce_count = True
 
 
 class Trap(mesa.Agent):
     """
-    罠エージェント。キョンを捕まえるための罠。
+    トラップエージェント（罠）。植生の密度に応じて捕獲確率が異なる。
     """
-    def __init__(self, unique_id, model):
+
+    #energy = None
+
+    def __init__(self, unique_id, pos, model, is_hunt=False):
         super().__init__(unique_id, model)
+        #self.energy = energy
+        self.is_hunt = is_hunt  # 捕獲の成功を示すフラグ
 
-    def get_capture_probability(self, vegetation_density, in_food_area=False):
+    def step(self):
         """
-        罠にかかる確率を植生密度と食物資源エリアの情報を基に計算する。
+        罠は固定されている。キョンが同じセルに入った場合に捕獲を判定する。
         """
-        base_probability = {
-            "dense": 0.3,
-            "medium": 0.5,
-            "sparse": 0.7
-        }
+        self.is_hunt = False  # 毎ステップ、捕獲フラグを初期化
 
-        if in_food_area:
-            # 食物資源エリアにいる場合は捕獲確率が高くなる
-            return base_probability[vegetation_density] + 0.1
-        return base_probability[vegetation_density]
+        # 現在のセルにいるキョンを探す
+        this_cell = self.model.grid.get_cell_list_contents([self.pos])
+        kyon_in_cell = [obj for obj in this_cell if isinstance(obj, Kyon)]
+        
+        if kyon_in_cell:
+            # 現在のセルの植生密度を取得
+            vegetation_density = [obj for obj in this_cell if isinstance(obj, VegetationDensity)][0]
+
+            # 植生密度に応じて捕獲確率を設定
+            if vegetation_density.density == "dense":
+                trap_success_rate = self.model.base_success_rate * self.model.dense_vegetation_modifier
+            elif vegetation_density.density == "normal":
+                trap_success_rate = self.model.base_success_rate * self.model.normal_vegetation_modifier
+            else:
+                trap_success_rate = self.model.base_success_rate * self.model.sparse_vegetation_modifier
+
+            # 捕獲確率に基づいて捕獲判定
+            if self.random.random() < trap_success_rate:
+                self.is_hunt = True  # 捕獲に成功
+                for kyon in kyon_in_cell:
+                    self.model.grid.remove_agent(kyon)  # キョンを捕獲して取り除く
+                    self.model.schedule.remove(kyon)
+                    
+        # 死亡または繁殖
+        # if self.energy <= 0:
+        #     self.model.grid.remove_agent(self)
+        #     self.model.schedule.remove(self)
+        # else:
+        #     if self.random.random() < self.model.wolf_reproduce:
+            # 新しい狼を生成
+            #self.energy /= 2
+            #cub = Wolf(
+            #    self.model.next_id(), self.pos, self.model, self.moore, self.energy
+          #  )
+          #  self.model.grid.place_agent(cub, cub.pos)
+           # self.model.schedule.add(cub)
+
+
+class VegetationDensity(mesa.Agent):
+    """
+    各セルに植生密度を設定するためのエージェント。密度は "dense"（濃い）、"normal"（普通）、"sparse"（薄い）のいずれか。
+    """
+
+    def __init__(self, unique_id, pos, model, density):
+        """
+        VegetationDensity の初期化。密度を設定します。
+        """
+        super().__init__(unique_id, model)
+        self.pos = pos
+        self.density = density  # "dense"、"normal"、"sparse" のいずれか
+
+    def step(self):
+        """
+        VegetationDensity 自体は固定されているため、特に何もしません。
+        """
+        pass
