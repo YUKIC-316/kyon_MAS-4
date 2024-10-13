@@ -96,7 +96,7 @@ class KyonModel(mesa.Model):
 
         self.schedule = RandomActivationByTypeFiltered(self)
         self.grid = mesa.space.MultiGrid(self.width, self.height, torus=True)
-        self.increased_Kyon = 0
+        self.increased_kyon = 0
         self.kyon_nums = []
         self.captured_kyons = []
         self.dead_kyons = []
@@ -120,7 +120,7 @@ class KyonModel(mesa.Model):
                 "CapturedKyon":lambda m: m.schedule.get_type_count(
                     Trap, lambda x: x.is_hunt
                 ),
-                "IncreasedKyon":lambda m:m.increased_Kyon,
+                "IncreasedKyon":lambda m:m.increased_kyon,
             }
         )
 
@@ -193,7 +193,7 @@ class KyonModel(mesa.Model):
     def step(self):
         self.schedule.step()
  
-        self.increased_Kyon = self.schedule.get_type_count(Kyon) - self.before_kyon_count
+        self.increased_kyon = self.schedule.get_type_count(Kyon) - self.before_kyon_count
         # collect data
         self.datacollector.collect(self)
 
@@ -213,10 +213,10 @@ class KyonModel(mesa.Model):
         print(f"捉えられたキョン：{self.schedule.get_type_count(Wolf, lambda x: x.is_hunt)}")
 
         # 寿命で死んだキョン
-        print(f"寿命で死んだキョン：{self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count) - self.schedule.get_type_count(Wolf, lambda x: x.is_hunt) - self.increased_Kyon}")
+        print(f"寿命で死んだキョン：{self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count) - self.schedule.get_type_count(Wolf, lambda x: x.is_hunt) - self.increased_kyon}")
 
         # キョンの増減数
-        print(f"キョンの増減数：{self.increased_Kyon}")
+        print(f"キョンの増減数：{self.increased_kyon}")
 
         # キョンが食べた草の数
         print(f"キョンが食べた草の数：{self.schedule.get_type_count(Kyon, lambda x: x.is_eat)}")
@@ -225,10 +225,10 @@ class KyonModel(mesa.Model):
 
         self.kyon_nums.append(self.schedule.get_type_count(Kyon))
         self.captured_kyons.append(self.schedule.get_type_count(Trap, lambda x: x.is_hunt))
-        self.dead_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count) - self.schedule.get_type_count(Trap, lambda x: x.is_hunt) - self.increased_Kyon)
+        self.dead_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count) - self.schedule.get_type_count(Trap, lambda x: x.is_hunt) - self.increased_kyon)
         self.born_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count))
         #self.eaten_grasses.append(self.schedule.get_type_count(Kyon, lambda x: x.is_eat))
-        self.kyon_increase.append(self.increased_Kyon)
+        self.kyon_increase.append(self.increased_kyon)
 
         self.counter += 1
 
