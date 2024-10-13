@@ -92,7 +92,7 @@ class KyonModel(mesa.Model):
         self.dense_vegetation_modifier = dense_vegetation_modifier  # 濃い植生での成功率補正
         self.normal_vegetation_modifier = normal_vegetation_modifier  # 普通の植生での成功率補正
         self.sparse_vegetation_modifier = sparse_vegetation_modifier  # 薄い植生での成功率補正
-        self.simuration_counter = simulation_counter
+        self.simulation_counter = simulation_counter
 
         self.schedule = RandomActivationByTypeFiltered(self)
         self.grid = mesa.space.MultiGrid(self.width, self.height, torus=True)

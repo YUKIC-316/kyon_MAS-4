@@ -81,7 +81,7 @@ model_params = {
     "base_success_rate": mesa.visualization.Slider(
         "キョン捕獲成功率", 0.06, 0.001, 1.0, 0.001
     ),
-    "simuration_counter": mesa.visualization.Slider("シミュレーションカウンター", 1, 1, 10),
+    "simulation_counter": mesa.visualization.Slider("シミュレーションカウンター", 1, 1, 10),
     # "wolf_reproduce": mesa.visualization.Slider(
     #     "ハンターの再生産率",
     #     0.0,
