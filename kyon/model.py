@@ -41,7 +41,7 @@ class KyonModel(mesa.Model):
 
     #grass = True
     #grass_regrowth_time = 3
-    #sheep_gain_from_food = 4
+    #Kyon_gain_from_food = 4
     
     
     simulation_counter = 1
@@ -63,7 +63,7 @@ class KyonModel(mesa.Model):
         #wolf_gain_from_food=0,
         #grass=True,
         #grass_regrowth_time=3,
-        #sheep_gain_from_food=4,
+        #kyon_gain_from_food=4,
         #capture_success_rate=0.1,
         base_success_rate=0.0006,
         dense_vegetation_modifier=0.75,
@@ -72,17 +72,8 @@ class KyonModel(mesa.Model):
         simulation_counter=1,
     ):
         """
-        指定されたパラメーターで新しいウルフ-シープモデルを作成します。
+        指定されたパラメーターで新しいKyonモデルを作成します。
 
-        引数:
-            initial_sheep: 初期のシープの数
-            initial_wolves: 初期のウルフの数
-            sheep_reproduce: 各ステップでのシープの繁殖確率
-            wolf_reproduce: 各ステップでのウルフの繁殖確率
-            wolf_gain_from_food: ウルフがシープを食べた際に得るエネルギー
-            grass: シープが草を食べてエネルギーを得るかどうか
-            grass_regrowth_time: 草パッチが食べられてから再成長するまでの時間
-            sheep_gain_from_food: シープが草から得るエネルギー（有効にされている場合）
         """
     
         super().__init__()
@@ -96,7 +87,7 @@ class KyonModel(mesa.Model):
         #self.wolf_gain_from_food = wolf_gain_from_food
         #self.grass = grass
         #self.grass_regrowth_time = grass_regrowth_time
-        #self.sheep_gain_from_food = sheep_gain_from_food
+        #self.kyon_gain_from_food = kyon_gain_from_food
         self.base_success_rate = base_success_rate  # 罠の基本成功率
         self.dense_vegetation_modifier = dense_vegetation_modifier  # 濃い植生での成功率補正
         self.normal_vegetation_modifier = normal_vegetation_modifier  # 普通の植生での成功率補正
@@ -120,7 +111,7 @@ class KyonModel(mesa.Model):
                     #GrassPatch, lambda x: x.fully_grown
                 #),
                 #"EatenGrass": lambda m: m.schedule.get_type_count(
-                    #Sheep, lambda x: x.is_eat
+                    #Kyon, lambda x: x.is_eat
                 #),
                 "BornKyon":lambda m: m.schedule.get_type_count(
                     Kyon, lambda x: x.kyon_reproduce_count
@@ -145,7 +136,7 @@ class KyonModel(mesa.Model):
         for i in range(self.initial_kyon):
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
-            #energy = self.random.randrange(2 * self.sheep_gain_from_food)
+            #energy = self.random.randrange(2 * self.kyon_gain_from_food)
             # print(type(energy))
             kyon = Kyon(self.next_id(), (x, y), self, False, int(age_distribution[i])) 
             self.grid.place_agent(kyon, (x, y))
@@ -213,29 +204,29 @@ class KyonModel(mesa.Model):
         # 寿命で死んだキョン = 子を産んだキョン - 捉えられたキョン - キョンの増減数
 
         # キョンの数
-        print(f"キョンの数：{self.schedule.get_type_count(Sheep)}")
+        print(f"キョンの数：{self.schedule.get_type_count(Kyon)}")
         
         # 子を産んだキョンの数
-        print(f"子を産んだキョン：{self.schedule.get_type_count(Sheep, lambda x: x.sheep_reproduce_count)}")
+        print(f"子を産んだキョン：{self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count)}")
 
         # 捉えられたキョンの数
         print(f"捉えられたキョン：{self.schedule.get_type_count(Wolf, lambda x: x.is_hunt)}")
 
         # 寿命で死んだキョン
-        print(f"寿命で死んだキョン：{self.schedule.get_type_count(Sheep, lambda x: x.sheep_reproduce_count) - self.schedule.get_type_count(Wolf, lambda x: x.is_hunt) - self.increased_Kyon}")
+        print(f"寿命で死んだキョン：{self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count) - self.schedule.get_type_count(Wolf, lambda x: x.is_hunt) - self.increased_Kyon}")
 
         # キョンの増減数
         print(f"キョンの増減数：{self.increased_Kyon}")
 
         # キョンが食べた草の数
-        print(f"キョンが食べた草の数：{self.schedule.get_type_count(Sheep, lambda x: x.is_eat)}")
+        print(f"キョンが食べた草の数：{self.schedule.get_type_count(Kyon, lambda x: x.is_eat)}")
 
         '''
 
         self.kyon_nums.append(self.schedule.get_type_count(Kyon))
         self.captured_kyons.append(self.schedule.get_type_count(Trap, lambda x: x.is_hunt))
-        self.dead_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.sheep_reproduce_count) - self.schedule.get_type_count(Trap, lambda x: x.is_hunt) - self.increased_Kyon)
-        self.born_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.sheep_reproduce_count))
+        self.dead_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count) - self.schedule.get_type_count(Trap, lambda x: x.is_hunt) - self.increased_Kyon)
+        self.born_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count))
         #self.eaten_grasses.append(self.schedule.get_type_count(Kyon, lambda x: x.is_eat))
         self.kyon_increase.append(self.increased_Kyon)
 

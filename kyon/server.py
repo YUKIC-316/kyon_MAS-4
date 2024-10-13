@@ -71,10 +71,10 @@ model_params = {
     "title": mesa.visualization.StaticText("パラメータ:"),
     # "grass": mesa.visualization.Checkbox("草の有効化", True),
     #"grass_regrowth_time": mesa.visualization.Slider("草の再成長時間", 2, 1, 10),  
-    "initial_sheep": mesa.visualization.Slider(
+    "initial_kyon": mesa.visualization.Slider(
         "初期キョン個体数", 60, 10, 300 
     ), 
-    "sheep_reproduce": mesa.visualization.Slider(
+    "kyon_reproduce": mesa.visualization.Slider(
         "キョンの再生産率", 0.005, 0.001, 1.0, 0.001
     ),
     #"initial_wolves": mesa.visualization.Slider("初期ハンター個体数", 10, 0, 100),
@@ -93,7 +93,7 @@ model_params = {
     # "wolf_gain_from_food": mesa.visualization.Slider(
     #     "ハンターの食物から得るエネルギー", 0, 0, 50
     # ),
-    # "sheep_gain_from_food": mesa.visualization.Slider("キョンの食物から得るエネルギー", 4, 1, 10),
+    # "kyon_gain_from_food": mesa.visualization.Slider("キョンの食物から得るエネルギー", 4, 1, 10),
 }
 
 # サーバーの設定
