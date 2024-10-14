@@ -200,19 +200,27 @@ class KyonModel(mesa.Model):
     
     def set_food_resource_areas(self):
         """
-        フィールドを5x5のブロックに分割し、そのうちの10%を食物資源エリアとして設定。
+        フィールドを20x20のブロックに分割し、その中の10％に当たる40ブロックを食物資源エリアとしてランダムに割り当てる。
         """
-        block_size = 5
-        total_blocks = (self.width // block_size) * (self.height // block_size)
-        food_blocks = int(total_blocks * self.food_resource_area_percentage)
+        block_size = 5  # 各ブロックは5x5マス
+        total_blocks = 20 * 20  # 全フィールドは400ブロック
+        food_area_blocks = int(total_blocks * 0.1)  # 10% = 40ブロックが食物資源エリア
 
-        # ランダムに食物資源エリアを選ぶ
-        for _ in range(food_blocks):
-            x = self.random.randrange(self.width)
-            y = self.random.randrange(self.height)
-            food_area = FoodResourceArea(self.next_id(), (x, y), self)
-            self.grid.place_agent(food_area, (x, y))
+        food_area_positions = []
+        for i in range(20):  # 20列
+            for j in range(20):  # 20行
+                food_area_positions.append((i, j))
 
+        # ランダムに40ブロックを食物資源エリアに割り当てる
+        self.random.shuffle(food_area_positions)
+        food_area_positions = food_area_positions[:food_area_blocks]
+
+        for i, j in food_area_positions:
+            # 各ブロックの中に5x5の食物資源エリアを配置
+            for x in range(i * block_size, (i + 1) * block_size):
+                for y in range(j * block_size, (j + 1) * block_size):
+                    food_area = FoodResourceArea(self.next_id(), (x, y), self)
+                    self.grid.place_agent(food_area, (x, y))
                         
     def step(self):
         self.schedule.step()
