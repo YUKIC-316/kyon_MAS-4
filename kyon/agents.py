@@ -71,7 +71,7 @@ class Kyon(RandomWalker):
             #if self.model.grass:
                 #self.energy /= 2
             lamb = Kyon(
-                self.model.next_id(), self.pos, self.model, self.moore, self.energy, self.kyon_reproduce_count, 0
+                self.model.next_id(), self.pos, self.model, self.moore,  self.kyon_reproduce_count, 0
             )
             self.model.grid.place_agent(lamb, self.pos)
             self.model.schedule.add(lamb)

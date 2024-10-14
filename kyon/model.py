@@ -147,7 +147,7 @@ class KyonModel(mesa.Model):
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
             # energy = self.random.randrange(2 * self.wolf_gain_from_food)
-            energy = self.random.randrange(2)
+            # energy = self.random.randrange(2)
             trap = Trap(self.next_id(), (x, y), self)
             self.grid.place_agent(trap, (x, y))
             self.schedule.add(trap)
