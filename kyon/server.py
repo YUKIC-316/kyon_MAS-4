@@ -46,8 +46,7 @@ chart_element = mesa.visualization.ChartModule(
         # {"Label": "Wolves", "Color": "#AA0000"},  # ラベル「Wolves」を表示する
         {"Label": "Kyon", "Color": "#666666"},  # ラベル「Kyon」を表示する
         # {"Label": "EatenGrass", "Color": "#00AA00"},  # ラベル「EatenGrass」を表示する
-    ],
-    data_collector_name="datacollector"  # datacollector を指定
+    ]
 )
 
 # チャート要素2を作成
@@ -56,8 +55,7 @@ chart_element2 = mesa.visualization.ChartModule(
         {"Label": "BornKyon", "Color": "#00AA00"},  # 「生まれたキョン」を表示する
         {"Label": "DeadinLifeKyon", "Color": "#666666"},  # 「寿命で死んだキョン」を表示する
         {"Label": "CapturedKyon", "Color": "#AA0000"},  # 「トラップに捕まったキョン」を表示する
-    ],
-    data_collector_name="datacollector"  # datacollector を指定
+    ]
 )
 
 # チャート要素3を作成
@@ -102,4 +100,4 @@ model_params = {
 server = mesa.visualization.ModularServer(
     KyonModel, [canvas_element, chart_element, chart_element2, ], "キョン繁殖シミュレーション", model_params
 )
-server.port = 8529
+server.port = 8532

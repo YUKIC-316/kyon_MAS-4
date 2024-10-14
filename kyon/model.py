@@ -113,9 +113,11 @@ class KyonModel(mesa.Model):
                 #"EatenGrass": lambda m: m.schedule.get_type_count(
                     #Kyon, lambda x: x.is_eat
                 #),
+                
                 "BornKyon":lambda m: m.schedule.get_type_count(
                     Kyon, lambda x: x.kyon_reproduce_count
                 ),
+                
                 "DeadinLifeKyon": lambda m: m.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count) - m.schedule.get_type_count(Trap, lambda x: x.is_hunt) - m.increased_kyon,
                 "CapturedKyon":lambda m: m.schedule.get_type_count(
                     Trap, lambda x: x.is_hunt
@@ -195,27 +197,23 @@ class KyonModel(mesa.Model):
  
         self.increased_kyon = self.schedule.get_type_count(Kyon) - self.before_kyon_count
         
-        # 初回のステップを除いてデータを収集
-        if self.counter > 0:
-            self.datacollector.collect(self)
-            
-            # キョンの増減数を計算
-            self.kyon_nums.append(self.schedule.get_type_count(Kyon))
-            self.captured_kyons.append(self.schedule.get_type_count(Trap, lambda x: x.is_hunt))
-            self.dead_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count) - self.schedule.get_type_count(Trap, lambda x: x.is_hunt) - self.increased_kyon)
-            self.born_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count))
-            self.kyon_increase.append(self.increased_kyon)        
+        self.datacollector.collect(self)
+        
+        self.before_kyon_count = self.schedule.get_type_count(Kyon)
+
+        self.kyon_nums.append(self.schedule.get_type_count(Kyon))
+        self.captured_kyons.append(self.schedule.get_type_count(Trap, lambda x: x.is_hunt))
+        self.dead_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count) - self.schedule.get_type_count(Trap, lambda x: x.is_hunt) - self.increased_kyon)
+        self.born_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count))
+        self.kyon_increase.append(self.increased_kyon)        
  
 
         
         #self.eaten_grasses.append(self.schedule.get_type_count(Kyon, lambda x: x.is_eat))
 
-        else:
-            #初期ステップでは集計しない（ゼロで初期化）
-            self.born_kyons.append(0)
             
 
-        self.before_kyon_count = self.schedule.get_type_count(Kyon)
+        
         self.counter += 1
 
         if self.counter == 365*6:
