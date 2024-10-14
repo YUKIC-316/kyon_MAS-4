@@ -125,6 +125,23 @@ class Kyon(RandomWalker):
             self.model.schedule.add(lamb)
             self.kyon_reproduce_count = True
 
+    def find_nearest_food_area(self):
+        """
+        最も近い食物資源エリアを見つけ、その位置を返す
+        """
+        min_distance = float("inf")
+        nearest_food_area = None
+
+        # 全ての食物資源エリアを検索
+        for food_area in [agent for agent in self.model.schedule.agents if isinstance(agent, FoodResourceArea)]:
+            distance = self.model.grid.get_distance(self.pos, food_area.pos)
+            if distance < min_distance:
+                min_distance = distance
+                nearest_food_area = food_area
+
+        return nearest_food_area
+
+    
 
 class Trap(mesa.Agent):
     """
