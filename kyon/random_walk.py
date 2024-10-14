@@ -41,3 +41,23 @@ class RandomWalker(mesa.Agent):
             next_move = self.random.choice(next_moves)
             # 移動する:
             self.model.grid.move_agent(self, next_move)
+            
+            
+    def move_towards(self, destination_pos):
+        """
+        特定の目標地点に向かって移動するメソッド。
+        destination_pos: 移動したい場所の座標
+        """
+        # 現在位置から目的地までの最短距離の移動を計算する
+        current_x, current_y = self.pos
+        dest_x, dest_y = destination_pos
+
+        # x座標とy座標を個別に比較して、1マスずつ移動する
+        new_x = current_x + (1 if dest_x > current_x else -1 if dest_x < current_x else 0)
+        new_y = current_y + (1 if dest_y > current_y else -1 if dest_y < current_y else 0)
+
+        # 次のセルへ移動
+        next_move = (new_x, new_y)
+
+        # 移動する:
+        self.model.grid.move_agent(self, next_move)

@@ -14,7 +14,7 @@ import mesa
 import numpy as np
 from scipy.stats import lognorm
 from kyon.scheduler import RandomActivationByTypeFiltered
-from kyon.agents import Kyon, Trap, VegetationDensity  # 修正: Kyon, Trap, VegetationDensity をインポート
+from kyon.agents import Kyon, Trap, VegetationDensity, FoodResourceArea  # 修正: Kyon, Trap, VegetationDensity, FoodResourceArea をインポート
 import pandas as pd
 
 class KyonModel(mesa.Model):
@@ -27,6 +27,7 @@ class KyonModel(mesa.Model):
 
     initial_kyon = 60
     initial_traps = 50
+    food_resource_area_percentage = 0.1  # 食物資源エリアの割合
 
     kyon_reproduce = 0.005
     #wolf_reproduce = 0
@@ -69,6 +70,7 @@ class KyonModel(mesa.Model):
         dense_vegetation_modifier=0.75,
         normal_vegetation_modifier=1.0,
         sparse_vegetation_modifier=2.0,
+        food_resource_area_percentage=0.1,  # 食物資源エリアの割合
         simulation_counter=1,
     ):
         """
@@ -92,6 +94,7 @@ class KyonModel(mesa.Model):
         self.dense_vegetation_modifier = dense_vegetation_modifier  # 濃い植生での成功率補正
         self.normal_vegetation_modifier = normal_vegetation_modifier  # 普通の植生での成功率補正
         self.sparse_vegetation_modifier = sparse_vegetation_modifier  # 薄い植生での成功率補正
+        self.food_resource_area_percentage = food_resource_area_percentage  # 食物資源エリアの割合
         self.simulation_counter = simulation_counter
 
         self.schedule = RandomActivationByTypeFiltered(self)
@@ -133,6 +136,9 @@ class KyonModel(mesa.Model):
 
         # 植生密度を設定（GrassPatch を使用）
         self.set_vegetation_density()
+        
+        # 食物資源エリアを生成
+        self.set_food_resource_areas()
         
         # Create kyon:
         for i in range(self.initial_kyon):
@@ -191,6 +197,22 @@ class KyonModel(mesa.Model):
                     for y in range(j * block_size, (j + 1) * block_size):
                         patch = VegetationDensity(self.next_id(), (x, y), self, density)  
                         self.grid.place_agent(patch, (x, y))
+    
+    def set_food_resource_areas(self):
+        """
+        フィールドを5x5のブロックに分割し、そのうちの10%を食物資源エリアとして設定。
+        """
+        block_size = 5
+        total_blocks = (self.width // block_size) * (self.height // block_size)
+        food_blocks = int(total_blocks * self.food_resource_area_percentage)
+
+        # ランダムに食物資源エリアを選ぶ
+        for _ in range(food_blocks):
+            x = self.random.randrange(self.width)
+            y = self.random.randrange(self.height)
+            food_area = FoodResourceArea(self.next_id(), (x, y), self)
+            self.grid.place_agent(food_area, (x, y))
+
                         
     def step(self):
         self.schedule.step()

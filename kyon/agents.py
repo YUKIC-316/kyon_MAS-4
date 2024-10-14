@@ -9,24 +9,29 @@ class Kyon(RandomWalker):
     
     #energy = None
     after_birth = 0
+    steps_in_food_area = 0  # 食物資源エリア内にいるターン数をカウント
 
     def __init__(self, unique_id, pos, model, moore,  kyon_reproduce_count=False, after_birth=0):
         super().__init__(unique_id, pos, model, moore=moore)
         #self.energy = energy
         self.kyon_reproduce_count = kyon_reproduce_count
         self.after_birth = after_birth
+        self.in_food_area = False  # 食物資源エリアにいるかどうかのフラグを初期化
+        self.steps_in_food_area = 0  # 食物資源エリア内にいるターン数を初期化
         #self.is_eat = False
 
     def step(self):
         """
-        モデルのステップ。植生の密度に応じて移動し、草を食べ、繁殖します。
+        モデルのステップ。植生の密度に応じて移動し、食物資源エリアにも対応する
         """
         self.kyon_reproduce_count = False
         self.after_birth += 1
         #self.is_eat = False
         
-        # 植生の密度に基づいて移動マス数を決定する
+        # 現在のセル情報を取得
         current_cell = self.model.grid.get_cell_list_contents([self.pos])
+        
+        # 植生の密度に基づいて移動マス数を決定する
         vegetation_density = [obj for obj in current_cell if isinstance(obj, VegetationDensity)][0]
         
         if vegetation_density.density == "dense":  # 濃い植生
@@ -36,10 +41,52 @@ class Kyon(RandomWalker):
         else:  # 薄い植生
             move_steps = 3
 
-        # ランダムに指定されたマス数だけ移動
-        self.random_move(move_steps=move_steps)
+        # キョンが食物資源エリア内にいるかを確認
+        in_food_area = any(isinstance(obj, FoodResourceArea) for obj in current_cell)
 
-        living = True
+        # 食物資源エリア内にいる場合の動き
+        if in_food_area:
+            self.steps_in_food_area += 1
+            # 5ターン滞在したらランダムに外に出る
+            if self.steps_in_food_area < 5:
+                self.random_move(move_steps=1)
+            else:
+                self.steps_in_food_area = 0
+                self.random_move(move_steps=move_steps)
+
+        else:
+            # 食物資源エリア外にいる場合
+            self.steps_in_food_area = 0
+
+            # 食物資源エリアに向かうかランダムに移動するかを決定
+            nearest_food_area = self.find_nearest_food_area()
+            if nearest_food_area:
+                distance_to_food_area = self.model.grid.get_distance(self.pos, nearest_food_area.pos)
+                
+                if distance_to_food_area <= 5:
+                    # 5マス以内にいる場合、80%の確率で食物資源エリアに向かう
+                    if self.random.random() < 0.8:
+                        self.move_towards(nearest_food_area.pos)
+                    else:
+                        self.random_move(move_steps=move_steps)
+                else:
+                    # 5マスより離れている場合、20%の確率で食物資源エリアに向かう
+                    if self.random.random() < 0.2:
+                        self.move_towards(nearest_food_area.pos)
+                    else:
+                        self.random_move(move_steps=move_steps)
+            else:
+                # 食物資源エリアが見つからない場合はランダムに移動
+                self.random_move(move_steps=move_steps)
+
+
+
+
+
+        # ランダムに指定されたマス数だけ移動
+        #self.random_move(move_steps=move_steps)
+
+        
 
         #if self.model.grass:
             # エネルギーを減少させる
@@ -60,6 +107,7 @@ class Kyon(RandomWalker):
         #     living = False
 
         # 死亡（年齢が高くなるほど死亡率があがる）
+        living = True
         if self.random.random() < (self.model.kyon_reproduce / 5) * (self.after_birth / 540):
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
@@ -71,7 +119,7 @@ class Kyon(RandomWalker):
             #if self.model.grass:
                 #self.energy /= 2
             lamb = Kyon(
-                self.model.next_id(), self.pos, self.model, self.moore,  self.kyon_reproduce_count, 0
+                self.model.next_id(), self.pos, self.model, self.moore, self.kyon_reproduce_count, 0
             )
             self.model.grid.place_agent(lamb, self.pos)
             self.model.schedule.add(lamb)
@@ -112,6 +160,18 @@ class Trap(mesa.Agent):
             else:
                 trap_success_rate = self.model.base_success_rate * self.model.sparse_vegetation_modifier
 
+            # セルが食物資源エリアに含まれているかを確認
+            in_food_area = any(isinstance(obj, FoodResourceArea) for obj in this_cell)
+
+            # 食物資源エリアにいる場合、捕獲成功率をさらに強化
+            if in_food_area:
+                if vegetation_density.density == "dense":
+                    trap_success_rate *= 3  # 濃いエリアでは捕獲成功率が3倍
+                else:
+                    trap_success_rate *= 4  # 普通・薄いエリアでは捕獲成功率が4倍
+            
+            
+            
             # 捕獲確率に基づいて捕獲判定
             if self.random.random() < trap_success_rate:
                 self.is_hunt = True  # 捕獲に成功
@@ -150,5 +210,25 @@ class VegetationDensity(mesa.Agent):
     def step(self):
         """
         VegetationDensity 自体は固定されているため、特に何もしません。
+        """
+        pass
+
+class FoodResourceArea(mesa.Agent):
+    """
+    フィールド上の食物資源エリアを表します。
+    エリア内ではキョンの動きに影響を与え、罠の成功率も上昇します。
+    """
+    
+    def __init__(self, unique_id, pos, model):
+        """
+        食物資源エリアの初期化。
+        """
+        super().__init__(unique_id, model)
+        self.pos = pos
+
+    def step(self):
+        """
+        食物資源エリア自体は固定されているため、特に何もしません。
+        ただし、キョンや罠の動作に影響を与える役割を持ちます。
         """
         pass

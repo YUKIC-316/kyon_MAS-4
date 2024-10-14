@@ -1,6 +1,6 @@
 import mesa
 
-from kyon.agents import Trap, Kyon, VegetationDensity
+from kyon.agents import Trap, Kyon, VegetationDensity, FoodResourceArea
 from kyon.model import KyonModel
 
 def kyon_portrayal(agent):
@@ -12,14 +12,14 @@ def kyon_portrayal(agent):
     if isinstance(agent, Kyon):
         portrayal["Shape"] = "kyon/resources/kyon.png"
         portrayal["scale"] = 0.9
-        portrayal["Layer"] = 1
+        portrayal["Layer"] = 2
         portrayal["text"] = round(agent.after_birth, 1)
         portrayal["text_color"] = "Black"
 
     elif isinstance(agent, Trap):
         portrayal["Shape"] = "kyon/resources/hunter.png"
         portrayal["scale"] = 0.9
-        portrayal["Layer"] = 2
+        portrayal["Layer"] = 3
 
 
     elif isinstance(agent, VegetationDensity):
@@ -34,7 +34,17 @@ def kyon_portrayal(agent):
         portrayal["Layer"] = 0
         portrayal["w"] = 1
         portrayal["h"] = 1
-
+        
+        
+    elif isinstance(agent, FoodResourceArea):
+        portrayal["Color"] = ["#FFD700", "#FFEC8B", "#FFFACD"]  # 食物資源エリアを黄色で表示
+        portrayal["Shape"] = "rect"
+        portrayal["Filled"] = "true"
+        portrayal["Layer"] = 1
+        portrayal["w"] = 1
+        portrayal["h"] = 1
+    
+    
     return portrayal
 
 # キャンバス要素を作成
