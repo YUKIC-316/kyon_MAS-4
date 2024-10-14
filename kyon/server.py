@@ -40,23 +40,26 @@ def kyon_portrayal(agent):
 # キャンバス要素を作成
 canvas_element = mesa.visualization.CanvasGrid(kyon_portrayal, 100, 100, 1000, 1000)
 
-# チャート要素を作成
+# チャート要素を作成（移動平均を導入）
 chart_element = mesa.visualization.ChartModule(
     [
-        # {"Label": "Wolves", "Color": "#AA0000"},  # ラベル「Wolves」を表示する
         {"Label": "Kyon", "Color": "#666666"},  # ラベル「Kyon」を表示する
-        # {"Label": "EatenGrass", "Color": "#00AA00"},  # ラベル「EatenGrass」を表示する
-    ]
+    ],
+    data_collector_name='datacollector',
+    moving_average=10  # 10日間の移動平均を導入
 )
 
-# チャート要素2を作成
+# チャート要素2を作成（移動平均を導入）
 chart_element2 = mesa.visualization.ChartModule(
     [
         {"Label": "BornKyon", "Color": "#00AA00"},  # 「生まれたキョン」を表示する
         {"Label": "DeadinLifeKyon", "Color": "#666666"},  # 「寿命で死んだキョン」を表示する
         {"Label": "CapturedKyon", "Color": "#AA0000"},  # 「トラップに捕まったキョン」を表示する
-    ]
+    ],
+    data_collector_name='datacollector',
+    moving_average=10  # 10日間の移動平均を導入
 )
+
 
 # チャート要素3を作成
 #chart_element3 = mesa.visualization.ChartModule(
@@ -100,4 +103,4 @@ model_params = {
 server = mesa.visualization.ModularServer(
     KyonModel, [canvas_element, chart_element, chart_element2, ], "キョン繁殖シミュレーション", model_params
 )
-server.port = 8528
+server.port = 8529
