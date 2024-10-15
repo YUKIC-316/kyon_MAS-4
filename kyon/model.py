@@ -153,7 +153,7 @@ class KyonModel(mesa.Model):
         # Create traps
 
         # 罠を食物資源エリアの周辺に配置
-        self.place_traps_around_food_areas()        
+        self.place_traps_in_food_areas()        
         
         #罠が植生の薄いエリアに集中的に配置するときの追加コード以下1行
 #        self.place_traps_in_sparse_areas()
@@ -231,35 +231,34 @@ class KyonModel(mesa.Model):
                     self.grid.place_agent(food_area, (x, y))
 
 
-    #食物資源エリアの周辺に罠を集中して配置する際の追加コード
-    def place_traps_around_food_areas(self):
+    # 食物資源エリアに罠を集中して配置する関数
+    def place_traps_in_food_areas(self):
         """
-        食物資源エリアの周辺に罠を集中して配置する。
+        食物資源エリアに罠を集中して配置する。
         """
-        trap_count = self.initial_traps
-        trap_placed = 0
+        food_cells = []
 
-        # 全ての食物資源エリアを取得
-        food_areas = [agent for agent in self.grid.agents if isinstance(agent, FoodResourceArea)]
+        # フィールド全体をスキャンして、食物資源エリアの座標を取得する
+        for (content, pos) in self.grid.coord_iter():
+            for obj in content:
+                if isinstance(obj, FoodResourceArea):
+                    food_cells.append(pos)
 
-        # 各食物資源エリアの周辺に罠を配置
-        for food_area in food_areas:
-            # 食物資源エリアの周囲のセルを取得
-            neighborhood = self.grid.get_neighborhood(food_area.pos, moore=True, include_center=False)
-
-            for pos in neighborhood:
-                if trap_placed >= trap_count:
-                    break
-
-                # 周囲のセルに罠を配置
-                if self.grid.is_cell_empty(pos):
-                    trap = Trap(self.next_id(), pos, self)
-                    self.grid.place_agent(trap, pos)
-                    self.schedule.add(trap)
-                    trap_placed += 1
-
-            if trap_placed >= trap_count:
-                break
+        # 食物資源エリアに罠を設置
+        for _ in range(self.initial_traps):
+            if food_cells:
+                # 食物資源エリアからランダムに選んで罠を配置
+                pos = self.random.choice(food_cells)
+                trap = Trap(self.next_id(), pos, self)
+                self.grid.place_agent(trap, pos)
+                self.schedule.add(trap)
+            else:
+                # 食物資源エリアがなければランダムに配置
+                x = self.random.randrange(self.width)
+                y = self.random.randrange(self.height)
+                trap = Trap(self.next_id(), (x, y), self)
+                self.grid.place_agent(trap, (x, y))
+                self.schedule.add(trap)
 
 
 
