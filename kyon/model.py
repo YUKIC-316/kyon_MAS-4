@@ -151,14 +151,18 @@ class KyonModel(mesa.Model):
             self.schedule.add(kyon)
 
         # Create traps
-        for i in range(self.initial_traps):
-            x = self.random.randrange(self.width)
-            y = self.random.randrange(self.height)
-            # energy = self.random.randrange(2 * self.wolf_gain_from_food)
-            # energy = self.random.randrange(2)
-            trap = Trap(self.next_id(), (x, y), self)
-            self.grid.place_agent(trap, (x, y))
-            self.schedule.add(trap)
+        
+        self.place_traps_in_sparse_areas()
+        
+        #罠をランダムに配置するバージョン以下8行
+        #for i in range(self.initial_traps):
+            #x = self.random.randrange(self.width)
+            #y = self.random.randrange(self.height)
+                # energy = self.random.randrange(2 * self.wolf_gain_from_food)　いらない
+                # energy = self.random.randrange(2)　いらない
+            #trap = Trap(self.next_id(), (x, y), self)
+            #self.grid.place_agent(trap, (x, y))
+            #self.schedule.add(trap)
 
         # Create grass patches
         #if self.grass:
@@ -221,6 +225,38 @@ class KyonModel(mesa.Model):
                 for y in range(j * block_size, (j + 1) * block_size):
                     food_area = FoodResourceArea(self.next_id(), (x, y), self)
                     self.grid.place_agent(food_area, (x, y))
+
+
+    #植生の薄いエリアに集中的に罠を配置する際のコード以下28行
+    def place_traps_in_sparse_areas(self):
+        """
+        植生が薄いエリア ("sparse") に罠を集中して配置する。
+        """
+        sparse_cells = []
+
+        # フィールド全体をスキャンして、植生が薄いエリア ("sparse") の座標を取得する
+        for (content, x, y) in self.grid.coord_iter():
+            vegetation_density = [obj for obj in content if isinstance(obj, VegetationDensity)]
+            if vegetation_density and vegetation_density[0].density == "sparse":
+                sparse_cells.append((x, y))
+        
+        # 植生が薄いエリアに罠を設置
+        for _ in range(self.initial_traps):
+            if sparse_cells:
+                # 植生が薄いエリアからランダムに選んで罠を配置
+                x, y = self.random.choice(sparse_cells)
+                trap = Trap(self.next_id(), (x, y), self)
+                self.grid.place_agent(trap, (x, y))
+                self.schedule.add(trap)
+            else:
+                # 植生が薄いエリアがなければランダムに配置
+                x = self.random.randrange(self.width)
+                y = self.random.randrange(self.height)
+                trap = Trap(self.next_id(), (x, y), self)
+                self.grid.place_agent(trap, (x, y))
+                self.schedule.add(trap)
+
+
                         
     def step(self):
         self.schedule.step()
