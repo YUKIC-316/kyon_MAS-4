@@ -329,6 +329,7 @@ class KyonModel(mesa.Model):
 
             print(df_result)
 
+            #ファイル名を（罠の張り方、罠の初期数、キョンの初期数）にする
             df_result.to_csv(f"{self.initial_kyon}_{self.initial_traps}_{self.base_success_rate}_result_{self.simulation_counter}.csv")
 
             self.running = False
