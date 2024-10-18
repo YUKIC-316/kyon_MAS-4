@@ -153,20 +153,20 @@ class KyonModel(mesa.Model):
         # Create traps
 
         # 罠を食物資源エリアの周辺に配置
-        self.place_traps_in_food_areas()        
+#        self.place_traps_in_food_areas()        
         
         #罠が植生の薄いエリアに集中的に配置するときの追加コード以下1行
 #        self.place_traps_in_sparse_areas()
         
         #罠をランダムに配置するバージョン以下8行
-#        for i in range(self.initial_traps):
-#            x = self.random.randrange(self.width)
-#            y = self.random.randrange(self.height)
-#                # energy = self.random.randrange(2 * self.wolf_gain_from_food)　いらない
-#                # energy = self.random.randrange(2)　いらない
-#            trap = Trap(self.next_id(), (x, y), self)
-#            self.grid.place_agent(trap, (x, y))
-#            self.schedule.add(trap)
+        for i in range(self.initial_traps):
+            x = self.random.randrange(self.width)
+            y = self.random.randrange(self.height)
+                # energy = self.random.randrange(2 * self.wolf_gain_from_food)　いらない
+                # energy = self.random.randrange(2)　いらない
+            trap = Trap(self.next_id(), (x, y), self)
+            self.grid.place_agent(trap, (x, y))
+            self.schedule.add(trap)
 
         # Create grass patches
         #if self.grass:
@@ -232,33 +232,33 @@ class KyonModel(mesa.Model):
 
 
     # 食物資源エリアに罠を集中して配置する関数
-    def place_traps_in_food_areas(self):
-        """
-        食物資源エリアに罠を集中して配置する。
-        """
-        food_cells = []
+#    def place_traps_in_food_areas(self):
+#        """
+#        食物資源エリアに罠を集中して配置する。
+#        """
+#        food_cells = []
 
-        # フィールド全体をスキャンして、食物資源エリアの座標を取得する
-        for (content, pos) in self.grid.coord_iter():
-            for obj in content:
-                if isinstance(obj, FoodResourceArea):
-                    food_cells.append(pos)
+#        # フィールド全体をスキャンして、食物資源エリアの座標を取得する
+#        for (content, pos) in self.grid.coord_iter():
+#            for obj in content:
+#                if isinstance(obj, FoodResourceArea):
+#                    food_cells.append(pos)
 
         # 食物資源エリアに罠を設置
-        for _ in range(self.initial_traps):
-            if food_cells:
-                # 食物資源エリアからランダムに選んで罠を配置
-                pos = self.random.choice(food_cells)
-                trap = Trap(self.next_id(), pos, self)
-                self.grid.place_agent(trap, pos)
-                self.schedule.add(trap)
-            else:
-                # 食物資源エリアがなければランダムに配置
-                x = self.random.randrange(self.width)
-                y = self.random.randrange(self.height)
-                trap = Trap(self.next_id(), (x, y), self)
-                self.grid.place_agent(trap, (x, y))
-                self.schedule.add(trap)
+#        for _ in range(self.initial_traps):
+#            if food_cells:
+#                # 食物資源エリアからランダムに選んで罠を配置
+#                pos = self.random.choice(food_cells)
+#                trap = Trap(self.next_id(), pos, self)
+#                self.grid.place_agent(trap, pos)
+#                self.schedule.add(trap)
+#            else:
+#                # 食物資源エリアがなければランダムに配置
+#                x = self.random.randrange(self.width)
+#                y = self.random.randrange(self.height)
+#                trap = Trap(self.next_id(), (x, y), self)
+#                self.grid.place_agent(trap, (x, y))
+#                self.schedule.add(trap)
 
 
 
@@ -327,9 +327,19 @@ class KyonModel(mesa.Model):
                 "increase": self.kyon_increase
             })
 
-            print(df_result)
 
-            #ファイル名を（罠の張り方、罠の初期数、キョンの初期数）にする
-            df_result.to_csv(f"{self.initial_kyon}_{self.initial_traps}_{self.base_success_rate}_result_{self.simulation_counter}.csv")
+
+            print(df_result)
+            
+             # 罠の張り方を表す変数を設定
+#            placement_method = "sparse_vegetation"  # 植生の薄いエリアに罠を設置する場合
+#            placement_method = "food_resource"  # 食物資源エリアの周りに罠を設置する場合
+            placement_method = "random"  # ランダムに罠を設置する場合
+
+            # ファイル名を「罠の張り方、罠の初期数、キョンの初期数、シミュレーションカウンター」にする
+            file_path = f"results/{placement_method}_{self.initial_traps}_{self.initial_kyon}_result_{self.simulation_counter}.csv"
+
+            # ファイルに結果を保存
+            df_result.to_csv(file_path)
 
             self.running = False
