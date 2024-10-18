@@ -23,3 +23,9 @@ for i in range(10):
     
     # 結果がCSVに保存されるのを確認する
     print(f"Simulation {i+1} completed.")
+
+
+#一回だけシミュレーション動かすとき
+#from kyon.server import server
+
+#server.launch()

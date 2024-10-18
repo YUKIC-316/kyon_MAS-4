@@ -20,6 +20,7 @@ class Kyon(RandomWalker):
         self.steps_in_food_area = 0  # 食物資源エリア内にいるターン数を初期化
         #self.is_eat = False
 
+
     def step(self):
         """
         モデルのステップ。植生の密度に応じて移動し、食物資源エリアにも対応する
@@ -80,42 +81,22 @@ class Kyon(RandomWalker):
                 self.random_move(move_steps=move_steps)
 
 
-
-
-
         # ランダムに指定されたマス数だけ移動
         #self.random_move(move_steps=move_steps)
 
         
-
-        #if self.model.grass:
-            # エネルギーを減少させる
-            #self.energy -= 1
-            
-            # もし草があれば、食べる
-            #this_cell = self.model.grid.get_cell_list_contents([self.pos])
-            #grass_patch = [obj for obj in this_cell if isinstance(obj, GrassPatch)][0]
-            #if grass_patch.fully_grown:
-                #self.energy += self.model.kyon_gain_from_food
-                #grass_patch.fully_grown = False
-                #self.is_eat = True
-                
-        # 死亡
-        # if self.energy <= 0:
-        #     self.model.grid.remove_agent(self)
-        #     self.model.schedule.remove(self)
-        #     living = False
-
         # 死亡（年齢が高くなるほど死亡率があがる）
         living = True
-        if self.random.random() < (self.model.kyon_reproduce / 5) * (self.after_birth / 540):
+        if self.random.random() < (1 / 2190) * (self.after_birth / 2190):
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
             living = False
 
+
+
         # 繁殖
-        if living and self.after_birth >= 150 and self.random.random() < self.model.kyon_reproduce / 2:
-            # 新しい羊を生成します
+        if living and self.after_birth >= 150 and self.random.random() < (1/2) * (1/210):
+            # 新しい羊(=lamb)を生成します
             #if self.model.grass:
                 #self.energy /= 2
             lamb = Kyon(
@@ -124,6 +105,7 @@ class Kyon(RandomWalker):
             self.model.grid.place_agent(lamb, self.pos)
             self.model.schedule.add(lamb)
             self.kyon_reproduce_count = True
+        
 
     def find_nearest_food_area(self):
         """
@@ -148,11 +130,9 @@ class Trap(mesa.Agent):
     トラップエージェント（罠）。植生の密度に応じて捕獲確率が異なる。
     """
 
-    #energy = None
 
     def __init__(self, unique_id, pos, model, is_hunt=False):
-        super().__init__(unique_id, model)
-        #self.energy = energy
+        super().__init__(unique_id, model)  
         self.is_hunt = is_hunt  # 捕獲の成功を示すフラグ
 
     def step(self):
