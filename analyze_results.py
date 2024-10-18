@@ -32,6 +32,10 @@ plt.ylabel('Kyon Population')
 plt.title('Kyon Population Over Time: Simulations and Average')
 plt.legend()
 
+# 画像として保存する
+plt.savefig('results/simulation_results_random_50_60.png')  # 保存先のパスを指定
+
+
 # グラフを表示
 plt.show()
 
