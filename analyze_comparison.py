@@ -7,9 +7,9 @@ colors = ['blue', 'green', 'red']  # 各張り方に対するグラフの色
 
 # 各張り方の平均データを読み込む (ファイル名が変わったらそれに対応すること忘れずに)
 average_data_files = {
-    'random': 'results/average_random_50_60_recovery_0.csv',
-    'sparse_vegetation': 'results/average_sparse_vegetation_50_60_recovery_0.csv',
-    'food_resource': 'results/average_food_resource_50_60_recovery_0.csv'
+    'random': 'results/average_random_100_60_recovery_0.csv',
+    'sparse_vegetation': 'results/average_sparse_vegetation_100_60_recovery_0.csv',
+    'food_resource': 'results/average_food_resource_100_60_recovery_0.csv'
 }
 
 # グラフ化

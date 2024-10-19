@@ -13,7 +13,6 @@ class Kyon(RandomWalker):
 
     def __init__(self, unique_id, pos, model, moore,  kyon_reproduce_count=False, after_birth=0):
         super().__init__(unique_id, pos, model, moore=moore)
-        #self.energy = energy
         self.kyon_reproduce_count = kyon_reproduce_count
         self.after_birth = after_birth
         self.in_food_area = False  # 食物資源エリアにいるかどうかのフラグを初期化
@@ -85,13 +84,25 @@ class Kyon(RandomWalker):
         #self.random_move(move_steps=move_steps)
 
         
-        # 死亡（年齢が高くなるほど死亡率があがる）
-        living = True
-        if self.random.random() < (1 / 2190) * (self.after_birth / 2190):
-            self.model.grid.remove_agent(self)
-            self.model.schedule.remove(self)
-            living = False
+#        # 死亡（年齢が高くなるほど死亡率があがる）
+#        living = True
+#        if self.random.random() < (1 / 2190) * (self.after_birth / 2190):
+#            self.model.grid.remove_agent(self)
+#            self.model.schedule.remove(self)
+#            living = False
 
+        # 死亡（年齢が高くなるほど死亡率が急激に上がる）
+        living = True
+        if self.after_birth < 2190:
+            if self.random.random() < (1 / 2500) * (self.after_birth / 2190):  # 若いキョンのリスクを少し上げる
+                self.model.grid.remove_agent(self)
+                self.model.schedule.remove(self)
+                living = False
+        else:
+            if self.random.random() < (1 / 800) * ((self.after_birth / 2190) ** 2):  # 6歳以降のリスクを高める
+                self.model.grid.remove_agent(self)
+                self.model.schedule.remove(self)
+                living = False
 
 
         # 繁殖
