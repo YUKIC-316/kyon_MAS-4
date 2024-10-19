@@ -131,50 +131,60 @@ class Trap(mesa.Agent):
     """
 
 
-    def __init__(self, unique_id, pos, model, is_hunt=False):
+    def __init__(self, unique_id, pos, model, is_hunt=False, trap_recovery_turns=0):
         super().__init__(unique_id, model)  
         self.is_hunt = is_hunt  # 捕獲の成功を示すフラグ
+        self.trap_recovery_turns = trap_recovery_turns  # 罠の回復までのターン数
+        self.recovery_timer = 0  # 再稼働までの残りターン数
 
     def step(self):
         """
         罠は固定されている。キョンが同じセルに入った場合に捕獲を判定する。
         """
-        self.is_hunt = False  # 毎ステップ、捕獲フラグを初期化
+        # 捕獲後の回復タイマーが進行中なら、カウントダウンする
+        if self.recovery_timer > 0:
+            self.recovery_timer -= 1
 
-        # 現在のセルにいるキョンを探す
-        this_cell = self.model.grid.get_cell_list_contents([self.pos])
-        kyon_in_cell = [obj for obj in this_cell if isinstance(obj, Kyon)]
-        
-        if kyon_in_cell:
-            # 現在のセルの植生密度を取得
-            vegetation_density = [obj for obj in this_cell if isinstance(obj, VegetationDensity)][0]
+        # 回復タイマーが0ならば罠が稼働状態に戻る
+        if self.recovery_timer == 0:
+            
+            self.is_hunt = False  # 捕獲フラグを初期化
 
-            # 植生密度に応じて捕獲確率を設定
-            if vegetation_density.density == "dense":
-                trap_success_rate = self.model.base_success_rate * self.model.dense_vegetation_modifier
-            elif vegetation_density.density == "normal":
-                trap_success_rate = self.model.base_success_rate * self.model.normal_vegetation_modifier
-            else:
-                trap_success_rate = self.model.base_success_rate * self.model.sparse_vegetation_modifier
+            # 現在のセルにいるキョンを探す
+            this_cell = self.model.grid.get_cell_list_contents([self.pos])
+            kyon_in_cell = [obj for obj in this_cell if isinstance(obj, Kyon)]
 
-            # セルが食物資源エリアに含まれているかを確認
-            in_food_area = any(isinstance(obj, FoodResourceArea) for obj in this_cell)
+            if kyon_in_cell:
+                # 現在のセルの植生密度を取得
+                vegetation_density = [obj for obj in this_cell if isinstance(obj, VegetationDensity)][0]
 
-            # 食物資源エリアにいる場合、捕獲成功率をさらに強化
-            if in_food_area:
+                # 植生密度に応じて捕獲確率を設定
                 if vegetation_density.density == "dense":
-                    trap_success_rate *= 3  # 濃いエリアでは捕獲成功率が3倍
+                    trap_success_rate = self.model.base_success_rate * self.model.dense_vegetation_modifier
+                elif vegetation_density.density == "normal":
+                    trap_success_rate = self.model.base_success_rate * self.model.normal_vegetation_modifier
                 else:
-                    trap_success_rate *= 4  # 普通・薄いエリアでは捕獲成功率が4倍
-            
-            
-            
-            # 捕獲確率に基づいて捕獲判定
-            if self.random.random() < trap_success_rate:
-                self.is_hunt = True  # 捕獲に成功
-                for kyon in kyon_in_cell:
-                    self.model.grid.remove_agent(kyon)  # キョンを捕獲して取り除く
-                    self.model.schedule.remove(kyon)
+                    trap_success_rate = self.model.base_success_rate * self.model.sparse_vegetation_modifier
+
+                # セルが食物資源エリアに含まれているかを確認
+                in_food_area = any(isinstance(obj, FoodResourceArea) for obj in this_cell)
+
+                # 食物資源エリアにいる場合、捕獲成功率をさらに強化
+                if in_food_area:
+                    if vegetation_density.density == "dense":
+                        trap_success_rate *= 3  # 濃いエリアでは捕獲成功率が3倍
+                    else:
+                        trap_success_rate *= 4  # 普通・薄いエリアでは捕獲成功率が4倍
+
+                # 捕獲確率に基づいて捕獲判定
+                if self.random.random() < trap_success_rate:
+                    self.is_hunt = True  # 捕獲に成功
+                    for kyon in kyon_in_cell:
+                        self.model.grid.remove_agent(kyon)  # キョンを捕獲して取り除く
+                        self.model.schedule.remove(kyon)
+                    
+                    # 捕獲後に罠を回復状態にセット
+                    self.recovery_timer = self.trap_recovery_turns
                     
         # 死亡または繁殖
         # if self.energy <= 0:

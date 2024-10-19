@@ -27,6 +27,9 @@ class KyonModel(mesa.Model):
 
     initial_kyon = 60
     initial_traps = 50
+    
+    trap_recovery_turns=0    #罠の回復ステップ数
+    
     food_resource_area_percentage = 0.1  # 食物資源エリアの割合
 
     kyon_reproduce = 0.005
@@ -59,6 +62,9 @@ class KyonModel(mesa.Model):
         height=100,
         initial_kyon=60,
         initial_traps=50,
+        
+        trap_recovery_turns=0,    #罠の回復ステップ数
+        
         kyon_reproduce=0.005,
         #wolf_reproduce=0,
         #wolf_gain_from_food=0,
@@ -95,8 +101,8 @@ class KyonModel(mesa.Model):
         self.normal_vegetation_modifier = normal_vegetation_modifier  # 普通の植生での成功率補正
         self.sparse_vegetation_modifier = sparse_vegetation_modifier  # 薄い植生での成功率補正
         self.food_resource_area_percentage = food_resource_area_percentage  # 食物資源エリアの割合
-        self.simulation_counter = simulation_counter
-
+        self.simulation_counter = simulation_counter        
+        self.trap_recovery_turns = trap_recovery_turns    #罠の回復ステップ数
         self.schedule = RandomActivationByTypeFiltered(self)
         self.grid = mesa.space.MultiGrid(self.width, self.height, torus=True)
         self.increased_kyon = 0
@@ -156,23 +162,10 @@ class KyonModel(mesa.Model):
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
             trap = Trap(self.next_id(), (x, y), self)
+            trap.trap_recovery_turns = self.trap_recovery_turns  # 罠に回復ターン数を設定
             self.grid.place_agent(trap, (x, y))
             self.schedule.add(trap)
 
-        # Create grass patches
-        #if self.grass:
-            #for agent, x, y in self.grid.coord_iter():
-
-                #fully_grown = self.random.choice([True, False])
-
-                #if fully_grown:
-                    #countdown = self.grass_regrowth_time
-                #else:
-                    #countdown = self.random.randrange(self.grass_regrowth_time)
-
-                #patch = GrassPatch(self.next_id(), (x, y), self, fully_grown, countdown)
-                #self.grid.place_agent(patch, (x, y))
-                #self.schedule.add(patch)
 
         self.running = True
         self.counter = 0
@@ -327,8 +320,8 @@ class KyonModel(mesa.Model):
 #            placement_method = "food_resource"  # 食物資源エリアの周りに罠を設置する場合
             placement_method = "random"  # ランダムに罠を設置する場合
 
-            # ファイル名を「罠の張り方、罠の初期数、キョンの初期数、シミュレーションカウンター」にする
-            file_path = f"results/{placement_method}_{self.initial_traps}_{self.initial_kyon}_result_{self.simulation_counter}.csv"
+            # ファイル名を「罠の張り方、罠の初期数、キョンの初期数、罠の回復ステップ数、シミュレーションカウンター」にする
+            file_path = f"results/{placement_method}_{self.initial_traps}_{self.initial_kyon}_recovery_{self.trap_recovery_turns}_result_{self.simulation_counter}.csv"
 
             # ファイルに結果を保存
             df_result.to_csv(file_path)
