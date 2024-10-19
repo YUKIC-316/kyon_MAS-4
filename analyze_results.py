@@ -6,7 +6,7 @@ all_data = []
 
 # 10回分のシミュレーションデータを読み込んでリストに追加
 for i in range(1, 11):    
-    file_name = f"results/sparse_vegetation_100_60_recovery_0_result_{i}.csv"   # 植# "random", "sparse_vegetation", "food_resource" などを選択 # 罠の回復ステップ数を変更忘れずに
+    file_name = f"results/sparse_vegetation_100_60_recovery_0_result_{i}.csv"   # "random", "sparse_vegetation", "food_resource" などを選択 # 罠の回復ステップ数を変更忘れずに
     df = pd.read_csv(file_name)
     all_data.append(df)
 

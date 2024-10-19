@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 methods = ['random', 'sparse_vegetation', 'food_resource']  # 罠の張り方の種類
 colors = ['blue', 'green', 'red']  # 各張り方に対するグラフの色
 
-# 各張り方の平均データを読み込む (ファイル名が変わったらそれに対応すること忘れずに)
+# 各張り方の平均データを読み込む (ファイル名が変わったらそれに対応すること忘れずに：罠の張り方、罠数、キョン数、回復数)
 average_data_files = {
     'random': 'results/average_random_100_60_recovery_0.csv',
     'sparse_vegetation': 'results/average_sparse_vegetation_100_60_recovery_0.csv',
