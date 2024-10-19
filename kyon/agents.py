@@ -7,7 +7,6 @@ class Kyon(RandomWalker):
     初期化メソッドはRandomWalkerと同じです。
     """
     
-    #energy = None
     after_birth = 0
     steps_in_food_area = 0  # 食物資源エリア内にいるターン数をカウント
 
@@ -17,7 +16,7 @@ class Kyon(RandomWalker):
         self.after_birth = after_birth
         self.in_food_area = False  # 食物資源エリアにいるかどうかのフラグを初期化
         self.steps_in_food_area = 0  # 食物資源エリア内にいるターン数を初期化
-        #self.is_eat = False
+
 
 
     def step(self):
@@ -25,8 +24,7 @@ class Kyon(RandomWalker):
         モデルのステップ。植生の密度に応じて移動し、食物資源エリアにも対応する
         """
         self.kyon_reproduce_count = False
-        self.after_birth += 1
-        #self.is_eat = False
+        self.after_birth += 1        
         
         # 現在のセル情報を取得
         current_cell = self.model.grid.get_cell_list_contents([self.pos])
@@ -107,9 +105,7 @@ class Kyon(RandomWalker):
 
         # 繁殖
         if living and self.after_birth >= 150 and self.random.random() < (1/2) * (1/210):
-            # 新しい羊(=lamb)を生成します
-            #if self.model.grass:
-                #self.energy /= 2
+            # 新しい羊(=lamb)を生成します            
             lamb = Kyon(
                 self.model.next_id(), self.pos, self.model, self.moore, self.kyon_reproduce_count, 0
             )
@@ -197,19 +193,6 @@ class Trap(mesa.Agent):
                     # 捕獲後に罠を回復状態にセット
                     self.recovery_timer = self.trap_recovery_turns
                     
-        # 死亡または繁殖
-        # if self.energy <= 0:
-        #     self.model.grid.remove_agent(self)
-        #     self.model.schedule.remove(self)
-        # else:
-        #     if self.random.random() < self.model.wolf_reproduce:
-            # 新しい狼を生成
-            #self.energy /= 2
-            #cub = Wolf(
-            #    self.model.next_id(), self.pos, self.model, self.moore, self.energy
-          #  )
-          #  self.model.grid.place_agent(cub, cub.pos)
-           # self.model.schedule.add(cub)
 
 
 class VegetationDensity(mesa.Agent):

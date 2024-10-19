@@ -24,32 +24,15 @@ class KyonModel(mesa.Model):
 
     height = 100
     width = 100
-
     initial_kyon = 60
-#    initial_traps = 60   #キョンの初期頭数と同じ数設置
-    initial_traps = 100    #キョンより多めに設置
-#    initial_traps = 200    #過剰に設置
-    
-    trap_recovery_turns=0    #罠の回復ステップ数
-    
+    initial_traps = 100    #60,100,200から選択       
     food_resource_area_percentage = 0.1  # 食物資源エリアの割合
-
-    kyon_reproduce = 0.005
-    #wolf_reproduce = 0
-
-    #capture_success_rate = 0.1
     base_success_rate=0.0006
     dense_vegetation_modifier=0.75
     normal_vegetation_modifier=1.0
-    sparse_vegetation_modifier=2.0
-    
-    #wolf_gain_from_food = 0
-
-    #grass = True
-    #grass_regrowth_time = 3
-    #Kyon_gain_from_food = 4
-    
-    
+    sparse_vegetation_modifier=2.0 
+    trap_recovery_turns=0    #罠の回復ステップ数
+    placement_method="sparse_vegetation"  # "random", "sparse_vegetation", "food_resource" などを選択          
     simulation_counter = 1
 
     verbose = False  # モニタリングのための出力
@@ -63,25 +46,14 @@ class KyonModel(mesa.Model):
         width=100,
         height=100,
         initial_kyon=60,
-#        initial_traps=60,   #キョンの初期頭数と同じ数設置
-        initial_traps=100,    #キョンより多めに設置
-#        initial_traps=200,    #過剰に設置
-
-        
-        trap_recovery_turns=0,    #罠の回復ステップ数
-        
-        kyon_reproduce=0.005,
-        #wolf_reproduce=0,
-        #wolf_gain_from_food=0,
-        #grass=True,
-        #grass_regrowth_time=3,
-        #kyon_gain_from_food=4,
-        #capture_success_rate=0.1,
+        initial_traps=100,    #60,100,200から選択
+        food_resource_area_percentage=0.1,  # 食物資源エリアの割合
         base_success_rate=0.0006,
         dense_vegetation_modifier=0.75,
         normal_vegetation_modifier=1.0,
         sparse_vegetation_modifier=2.0,
-        food_resource_area_percentage=0.1,  # 食物資源エリアの割合
+        trap_recovery_turns=0,    #罠の回復ステップ数
+        placement_method="sparse_vegetation",  # "random", "sparse_vegetation", "food_resource" などを選択
         simulation_counter=1,
     ):
         """
@@ -91,23 +63,18 @@ class KyonModel(mesa.Model):
     
         super().__init__()
         # パラメーターを設定
-        self.width = width
         self.height = height
+        self.width = width
         self.initial_kyon = initial_kyon
         self.initial_traps = initial_traps
-        self.kyon_reproduce = kyon_reproduce
-        #self.wolf_reproduce = wolf_reproduce
-        #self.wolf_gain_from_food = wolf_gain_from_food
-        #self.grass = grass
-        #self.grass_regrowth_time = grass_regrowth_time
-        #self.kyon_gain_from_food = kyon_gain_from_food
+        self.food_resource_area_percentage = food_resource_area_percentage  # 食物資源エリアの割合                        
         self.base_success_rate = base_success_rate  # 罠の基本成功率
         self.dense_vegetation_modifier = dense_vegetation_modifier  # 濃い植生での成功率補正
         self.normal_vegetation_modifier = normal_vegetation_modifier  # 普通の植生での成功率補正
         self.sparse_vegetation_modifier = sparse_vegetation_modifier  # 薄い植生での成功率補正
-        self.food_resource_area_percentage = food_resource_area_percentage  # 食物資源エリアの割合
-        self.simulation_counter = simulation_counter        
         self.trap_recovery_turns = trap_recovery_turns    #罠の回復ステップ数
+        self.placement_method = placement_method  # 罠の配置方法を保持
+        self.simulation_counter = simulation_counter        
         self.schedule = RandomActivationByTypeFiltered(self)
         self.grid = mesa.space.MultiGrid(self.width, self.height, torus=True)
         self.increased_kyon = 0
@@ -115,7 +82,6 @@ class KyonModel(mesa.Model):
         self.captured_kyons = []
         self.dead_kyons = []
         self.born_kyons = []
-        #self.eaten_grasses = []
         self.kyon_increase = []
         self.datacollector = mesa.DataCollector(
             {
