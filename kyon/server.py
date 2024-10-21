@@ -84,9 +84,6 @@ model_params = {
     "initial_kyon": mesa.visualization.Slider(
         "初期キョン個体数", 60, 10, 300 
     ), 
-    "kyon_reproduce": mesa.visualization.Slider(
-        "キョンの再生産率", 0.005, 0.001, 1.0, 0.001
-    ),
     #"initial_wolves": mesa.visualization.Slider("初期ハンター個体数", 10, 0, 100),
     "base_success_rate": mesa.visualization.Slider(
         "キョン捕獲成功率", 0.06, 0.001, 1.0, 0.001
@@ -110,4 +107,4 @@ model_params = {
 server = mesa.visualization.ModularServer(
     KyonModel, [canvas_element, chart_element, chart_element2, ], "キョン繁殖シミュレーション", model_params
 )
-server.port = 8534
+server.port = 8535
