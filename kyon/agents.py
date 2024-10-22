@@ -90,21 +90,20 @@ class Kyon(RandomWalker):
 #            living = False
 
         # 死亡（年齢が高くなるほど死亡率が急激に上がる）
-        living = True
         if self.after_birth < 2190:
             if self.random.random() < (1 / 2500) * (self.after_birth / 2190):  # 若いキョンのリスクを少し上げる
                 self.model.grid.remove_agent(self)
                 self.model.schedule.remove(self)
-                living = False
+                return  # 死亡した場合は以降の処理を行わない
         else:
             if self.random.random() < (1 / 800) * ((self.after_birth / 2190) ** 2):  # 6歳以降のリスクを高める
                 self.model.grid.remove_agent(self)
                 self.model.schedule.remove(self)
-                living = False
+                return  # 死亡した場合は以降の処理を行わない    
 
 
         # 繁殖
-        if living and self.after_birth >= 150 and self.random.random() < (1/2) * (1/210):
+        if self.after_birth >= 150 and self.random.random() < (1/2) * (1/210):
             # 新しい羊(=lamb)を生成します            
             lamb = Kyon(
                 self.model.next_id(), self.pos, self.model, self.moore, self.kyon_reproduce_count, 0
@@ -112,6 +111,54 @@ class Kyon(RandomWalker):
             self.model.grid.place_agent(lamb, self.pos)
             self.model.schedule.add(lamb)
             self.kyon_reproduce_count = True
+
+
+    def move_with_trap_check(self, move_steps):
+        """
+        指定されたマス数だけ移動し、その途中で罠に入ったかをチェックする
+        """
+        current_position = self.pos
+        for step in range(move_steps):
+            # 現在の位置からランダムに次のマスへ移動
+            next_position = self.random_move_step()
+
+            # 現在のマスと次のマスの罠を確認
+            self.check_trap_in_position(current_position)
+
+            # 次のマスに移動（間のマスも含む）
+            current_position = next_position
+            
+            # 最後に移動したマスで罠を確認
+            if step == move_steps - 1:
+                self.check_trap_in_position(current_position)
+
+        # 最後の移動先に移動
+        self.model.grid.move_agent(self, current_position)
+
+    def random_move_step(self):
+        """
+        キョンが1ステップだけランダムに移動するための関数
+        """
+        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+        return self.random.choice(possible_steps)
+
+    def check_trap_in_position(self, position):
+        """
+        指定されたマスに罠があるかどうかをチェックし、罠があれば捕獲を処理する
+        """
+        current_cell = self.model.grid.get_cell_list_contents([position])
+        trap_in_cell = [obj for obj in current_cell if isinstance(obj, Trap)]
+
+        if trap_in_cell:
+            for trap in trap_in_cell:
+                if trap.recovery_timer == 0:  # 罠が稼働中であるかどうかを確認
+                    success_rate = trap.calculate_trap_success_rate(position)
+                    if self.random.random() < success_rate:
+                        self.model.grid.remove_agent(self)
+                        self.model.schedule.remove(self)
+                        trap.is_hunt = True
+                        trap.recovery_timer = trap.trap_recovery_turns  # 罠の再稼働までの時間をセット
+                        return
         
 
     def find_nearest_food_area(self):
@@ -157,42 +204,29 @@ class Trap(mesa.Agent):
             
             self.is_hunt = False  # 捕獲フラグを初期化
 
-            # 現在のセルにいるキョンを探す
-            this_cell = self.model.grid.get_cell_list_contents([self.pos])
-            kyon_in_cell = [obj for obj in this_cell if isinstance(obj, Kyon)]
+    def calculate_trap_success_rate(self, position):
+        """
+        現在のセルに応じた罠の捕獲成功率を計算する。
+        """
+        current_cell = self.model.grid.get_cell_list_contents([position])
+        vegetation_density = [obj for obj in current_cell if isinstance(obj, VegetationDensity)][0]
 
-            if kyon_in_cell:
-                # 現在のセルの植生密度を取得
-                vegetation_density = [obj for obj in this_cell if isinstance(obj, VegetationDensity)][0]
+        if vegetation_density.density == "dense":
+            trap_success_rate = self.model.base_success_rate * self.model.dense_vegetation_modifier
+        elif vegetation_density.density == "normal":
+            trap_success_rate = self.model.base_success_rate * self.model.normal_vegetation_modifier
+        else:
+            trap_success_rate = self.model.base_success_rate * self.model.sparse_vegetation_modifier
 
-                # 植生密度に応じて捕獲確率を設定
-                if vegetation_density.density == "dense":
-                    trap_success_rate = self.model.base_success_rate * self.model.dense_vegetation_modifier
-                elif vegetation_density.density == "normal":
-                    trap_success_rate = self.model.base_success_rate * self.model.normal_vegetation_modifier
-                else:
-                    trap_success_rate = self.model.base_success_rate * self.model.sparse_vegetation_modifier
+        # 食物資源エリアにいる場合、捕獲成功率をさらに強化
+        in_food_area = any(isinstance(obj, FoodResourceArea) for obj in current_cell)
+        if in_food_area:
+            if vegetation_density.density == "dense":
+                trap_success_rate *= 3  # 濃いエリアでは捕獲成功率が3倍
+            else:
+                trap_success_rate *= 4  # 普通・薄いエリアでは捕獲成功率が4倍
 
-                # セルが食物資源エリアに含まれているかを確認
-                in_food_area = any(isinstance(obj, FoodResourceArea) for obj in this_cell)
-
-                # 食物資源エリアにいる場合、捕獲成功率をさらに強化
-                if in_food_area:
-                    if vegetation_density.density == "dense":
-                        trap_success_rate *= 3  # 濃いエリアでは捕獲成功率が3倍
-                    else:
-                        trap_success_rate *= 4  # 普通・薄いエリアでは捕獲成功率が4倍
-
-                # 捕獲確率に基づいて捕獲判定
-                if self.random.random() < trap_success_rate:
-                    self.is_hunt = True  # 捕獲に成功
-                    for kyon in kyon_in_cell:
-                        self.model.grid.remove_agent(kyon)  # キョンを捕獲して取り除く
-                        self.model.schedule.remove(kyon)
-                    
-                    # 捕獲後に罠を回復状態にセット
-                    self.recovery_timer = self.trap_recovery_turns
-                    
+        return trap_success_rate
 
 
 class VegetationDensity(mesa.Agent):
