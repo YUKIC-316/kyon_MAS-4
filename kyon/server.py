@@ -107,4 +107,4 @@ model_params = {
 server = mesa.visualization.ModularServer(
     KyonModel, [canvas_element, chart_element, chart_element2, ], "キョン繁殖シミュレーション", model_params
 )
-server.port = 8535
+server.port = 8536
