@@ -26,7 +26,7 @@ class KyonModel(mesa.Model):
     width = 100
     initial_kyon = 60
     initial_traps = 100    #60,100,200から選択       
-    food_resource_area_percentage = 0.1  # 食物資源エリアの割合
+    food_resource_area_percentage = 0.3  # 食物資源エリアの割合0.1➡0.3に変更
     base_success_rate=0.0006
     dense_vegetation_modifier=0.75
     normal_vegetation_modifier=1.0
@@ -47,7 +47,7 @@ class KyonModel(mesa.Model):
         height=100,
         initial_kyon=60,
         initial_traps=100,    #60,100,200から選択
-        food_resource_area_percentage=0.1,  # 食物資源エリアの割合
+        food_resource_area_percentage=0.3,  # 食物資源エリアの割合0.1➡0.3に変更
         base_success_rate=0.0006,
         dense_vegetation_modifier=0.75,
         normal_vegetation_modifier=1.0,
@@ -163,11 +163,11 @@ class KyonModel(mesa.Model):
     
     def set_food_resource_areas(self):
         """
-        フィールドを20x20のブロックに分割し、その中の10％に当たる40ブロックを食物資源エリアとしてランダムに割り当てる。
+        フィールドを20x20のブロックに分割し、その中の30％（10％から30％に変更）に当たる120ブロック（40から変更）を食物資源エリアとしてランダムに割り当てる。
         """
         block_size = 5  # 各ブロックは5x5マス
         total_blocks = 20 * 20  # 全フィールドは400ブロック
-        food_area_blocks = int(total_blocks * 0.1)  # 10% = 40ブロックが食物資源エリア
+        food_area_blocks = int(total_blocks * 0.3)  # 30% = 120ブロックが食物資源エリア
 
         food_area_positions = []
         for i in range(20):  # 20列
@@ -186,7 +186,7 @@ class KyonModel(mesa.Model):
                     self.grid.place_agent(food_area, (x, y))
 
 
-    # 食物資源エリアに罠を集中して配置する関数
+#    # 食物資源エリアに罠を集中して配置する関数
 #    def place_traps_in_food_areas(self):
 #        """
 #        食物資源エリアに罠を集中して配置する。
@@ -292,7 +292,7 @@ class KyonModel(mesa.Model):
 #            placement_method = "random"  # ランダムに罠を設置する場合
 
             # ファイル名を「罠の張り方、罠の初期数、キョンの初期数、罠の回復ステップ数、シミュレーションカウンター」にする
-            file_path = f"results/{placement_method}_{self.initial_traps}_{self.initial_kyon}_recovery_{self.trap_recovery_turns}_result_{self.simulation_counter}.csv"
+            file_path = f"results/{placement_method}_{self.initial_traps}_{self.initial_kyon}_recovery_{self.trap_recovery_turns}_result_1.csv"
 
             # ファイルに結果を保存
             df_result.to_csv(file_path)
