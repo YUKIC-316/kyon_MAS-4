@@ -29,25 +29,25 @@ class RandomWalker(mesa.Agent):
         self.pos = pos
         self.moore = moore
 
-    def random_move(self, move_steps=1):
+    def random_move(self):
         """
-        許可された方向のいずれかに指定されたセル数だけ移動する。
-
-        move_steps: 移動するセル数（デフォルトは1）
+        隣接するセルのいずれかに1セル移動する
         """
-        for _ in range(move_steps):
-            # 隣接するセルから次のセルを選択する。
-            next_moves = self.model.grid.get_neighborhood(self.pos, self.moore, True)
-            next_move = self.random.choice(next_moves)
-            # 移動する:
-            self.model.grid.move_agent(self, next_move)
-            
+        # 隣接するセルから次のセルを選択する。自分自身のセルは除外する。
+        next_moves = self.model.grid.get_neighborhood(self.pos, self.moore, include_center=False)
+        next_move = self.random.choice(next_moves)
+        # 移動する:
+        self.model.grid.move_agent(self, next_move)
             
     def move_towards(self, destination_pos):
         """
         特定の目標地点に向かって移動するメソッド。
         destination_pos: 移動したい場所の座標
         """
+        # 現在位置と目的地が同じ場合、何もしない
+        if self.pos == destination_pos:
+            return
+        
         # 現在位置から目的地までの最短距離の移動を計算する
         current_x, current_y = self.pos
         dest_x, dest_y = destination_pos
@@ -56,8 +56,7 @@ class RandomWalker(mesa.Agent):
         new_x = current_x + (1 if dest_x > current_x else -1 if dest_x < current_x else 0)
         new_y = current_y + (1 if dest_y > current_y else -1 if dest_y < current_y else 0)
 
-        # 次のセルへ移動
-        next_move = (new_x, new_y)
-
-        # 移動する:
-        self.model.grid.move_agent(self, next_move)
+        # 移動先がグリッドの範囲内かを確認
+        if 0 <= new_x < self.model.grid.width and 0 <= new_y < self.model.grid.height:
+            next_move = (new_x, new_y)
+            self.model.grid.move_agent(self, next_move)

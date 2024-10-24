@@ -12,6 +12,7 @@ NetLogoで見つけたモデルの複製:
 
 import mesa
 import numpy as np
+import math
 from scipy.stats import lognorm
 from kyon.scheduler import RandomActivationByTypeFiltered
 from kyon.agents import Kyon, Trap, VegetationDensity, FoodResourceArea  # 修正: Kyon, Trap, VegetationDensity, FoodResourceArea をインポート
@@ -22,17 +23,17 @@ class KyonModel(mesa.Model):
     キョン繁殖シミュレーションモデル
     """
 
-    height = 100
-    width = 100
-    initial_kyon = 60
-    initial_traps = 100    #60,100,200から選択       
-    food_resource_area_percentage = 0.3  # 食物資源エリアの割合0.1➡0.3に変更
-    base_success_rate=0.0006
-    dense_vegetation_modifier=0.75
+    height = 200
+    width = 200
+    initial_kyon = 60  #15
+    initial_traps = 60   #25   #60,100,200から選択       
+    food_resource_area_percentage = 0.1  # 食物資源エリア
+    base_success_rate=0.05  #捕獲成功率0.01
+    dense_vegetation_modifier=1.2
     normal_vegetation_modifier=1.0
-    sparse_vegetation_modifier=2.0 
+    sparse_vegetation_modifier=0.8 
     trap_recovery_turns=0    #罠の回復ステップ数
-    placement_method="sparse_vegetation"  # "random", "sparse_vegetation", "food_resource" などを選択          
+    placement_method="random"  # "random", "sparse_vegetation", "food_resource",   などを選択          
     simulation_counter = 1
 
     verbose = False  # モニタリングのための出力
@@ -43,17 +44,17 @@ class KyonModel(mesa.Model):
 
     def __init__(
         self,
-        width=100,
-        height=100,
-        initial_kyon=60,
-        initial_traps=100,    #60,100,200から選択
-        food_resource_area_percentage=0.3,  # 食物資源エリアの割合0.1➡0.3に変更
-        base_success_rate=0.0006,
-        dense_vegetation_modifier=0.75,
+        width=200,
+        height=200,
+        initial_kyon=60,  #15
+        initial_traps=60,   #25   #60,100,200から選択
+        food_resource_area_percentage=0.1,  # 食物資源エリア
+        base_success_rate=0.05,   #捕獲成功率0.01
+        dense_vegetation_modifier=1.2,
         normal_vegetation_modifier=1.0,
-        sparse_vegetation_modifier=2.0,
+        sparse_vegetation_modifier=0.8,
         trap_recovery_turns=0,    #罠の回復ステップ数
-        placement_method="sparse_vegetation",  # "random", "sparse_vegetation", "food_resource" などを選択
+        placement_method="random",  # "random", "sparse_vegetation", "food_resource"  などを選択
         simulation_counter=1,
     ):
         """
@@ -104,39 +105,28 @@ class KyonModel(mesa.Model):
         for d in data:
             age_distribution.append(round(d))
 
-        # 植生密度を設定（GrassPatch を使用）
+        # 植生密度を設定
         self.set_vegetation_density()
         
         # 食物資源エリアを生成
         self.set_food_resource_areas()
         
+        
         # Create kyon:
         for i in range(self.initial_kyon):
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
-            #energy = self.random.randrange(2 * self.kyon_gain_from_food)
-            # print(type(energy))
             kyon = Kyon(self.next_id(), (x, y), self, False, int(age_distribution[i])) 
             self.grid.place_agent(kyon, (x, y))
             self.schedule.add(kyon)
 
-        # Create traps
-
-        # 罠を食物資源エリアの周辺に配置
-#        self.place_traps_in_food_areas()        
-        
-        #罠が植生の薄いエリアに集中的に配置するときの追加コード以下1行
-        self.place_traps_in_sparse_areas()
-        
-        #罠をランダムに配置するバージョン以下8行
-#        for i in range(self.initial_traps):
-#            x = self.random.randrange(self.width)
-#            y = self.random.randrange(self.height)
-#            trap = Trap(self.next_id(), (x, y), self)
-#            trap.trap_recovery_turns = self.trap_recovery_turns  # 罠に回復ターン数を設定
-#            self.grid.place_agent(trap, (x, y))
-#            self.schedule.add(trap)
-
+        # 罠を配置
+        if self.placement_method == "sparse_vegetation":
+            self.place_traps_in_sparse_areas()
+        elif self.placement_method == "food_resource":
+            self.place_traps_in_food_areas()
+        else:
+            self.place_traps_randomly()
 
         self.running = True
         self.counter = 0
@@ -148,12 +138,12 @@ class KyonModel(mesa.Model):
         フィールドを10x10のブロックに分割し、それぞれのブロックに対して
         植生密度（濃い30%、普通40%、薄い30%）をランダムに割り振る。
         """
-        block_size = 10
-        densities = ["dense"] * 30 + ["normal"] * 40 + ["sparse"] * 30
+        block_size = 20   #10から変更
+        densities = ["dense"] * 30 + ["normal"] * 40 + ["sparse"] * 30  #30,40,30から変更
         self.random.shuffle(densities)
 
-        for i in range(10):  # 10列
-            for j in range(10):  # 10行
+        for i in range(10):  # 10列から変更
+            for j in range(10):  # 10行から変更
                 density = densities.pop()
 
                 for x in range(i * block_size, (i + 1) * block_size):
@@ -163,18 +153,18 @@ class KyonModel(mesa.Model):
     
     def set_food_resource_areas(self):
         """
-        フィールドを20x20のブロックに分割し、その中の30％（10％から30％に変更）に当たる120ブロック（40から変更）を食物資源エリアとしてランダムに割り当てる。
+        フィールドを40x40のブロックに分割し、その中の20％に当たる320ブロックを食物資源エリアとしてランダムに割り当てる。
         """
-        block_size = 5  # 各ブロックは5x5マス
-        total_blocks = 20 * 20  # 全フィールドは400ブロック
-        food_area_blocks = int(total_blocks * 0.3)  # 30% = 120ブロックが食物資源エリア
+        block_size = 5  # 各ブロックは5x5マス,5から変更
+        total_blocks = 40 * 40  # 全フィールドは400ブロック、20から変更
+        food_area_blocks = int(total_blocks * 0.1)    #20% = 320ブロックが食物資源エリア
 
         food_area_positions = []
-        for i in range(20):  # 20列
-            for j in range(20):  # 20行
+        for i in range(40):  # 20列
+            for j in range(40):  # 20行
                 food_area_positions.append((i, j))
 
-        # ランダムに40ブロックを食物資源エリアに割り当てる
+        # ランダムに160ブロックを食物資源エリアに割り当てる
         self.random.shuffle(food_area_positions)
         food_area_positions = food_area_positions[:food_area_blocks]
 
@@ -186,34 +176,44 @@ class KyonModel(mesa.Model):
                     self.grid.place_agent(food_area, (x, y))
 
 
-#    # 食物資源エリアに罠を集中して配置する関数
-#    def place_traps_in_food_areas(self):
-#        """
-#        食物資源エリアに罠を集中して配置する。
-#        """
-#        food_cells = []
-#
-#        # フィールド全体をスキャンして、食物資源エリアの座標を取得する
-#        for (content, pos) in self.grid.coord_iter():
-#            for obj in content:
-#                if isinstance(obj, FoodResourceArea):
-#                    food_cells.append(pos)
-#
-#        # 食物資源エリアに罠を設置
-#        for _ in range(self.initial_traps):
-#            if food_cells:
-#                # 食物資源エリアからランダムに選んで罠を配置
-#                pos = self.random.choice(food_cells)
-#                trap = Trap(self.next_id(), pos, self)
-#                self.grid.place_agent(trap, pos)
-#                self.schedule.add(trap)
-#            else:
-#                # 食物資源エリアがなければランダムに配置
-#                x = self.random.randrange(self.width)
-#                y = self.random.randrange(self.height)
-#                trap = Trap(self.next_id(), (x, y), self)
-#                self.grid.place_agent(trap, (x, y))
-#                self.schedule.add(trap)
+    # 罠をランダムに配置する関数
+    def place_traps_randomly(self):
+        for i in range(self.initial_traps):
+            x = self.random.randrange(self.width)
+            y = self.random.randrange(self.height)
+            trap = Trap(self.next_id(), (x, y), self)
+            trap.trap_recovery_turns = self.trap_recovery_turns
+            self.grid.place_agent(trap, (x, y))
+            self.schedule.add(trap)
+
+    # 食物資源エリアに罠を集中して配置する関数
+    def place_traps_in_food_areas(self):
+        """
+        食物資源エリアに罠を集中して配置する。
+        """
+        food_cells = []
+
+        # フィールド全体をスキャンして、食物資源エリアの座標を取得する
+        for (content, pos) in self.grid.coord_iter():
+            for obj in content:
+                if isinstance(obj, FoodResourceArea):
+                    food_cells.append(pos)
+
+        # 食物資源エリアに罠を設置
+        for _ in range(self.initial_traps):
+            if food_cells:
+                # 食物資源エリアからランダムに選んで罠を配置
+                pos = self.random.choice(food_cells)
+                trap = Trap(self.next_id(), pos, self)
+                self.grid.place_agent(trap, pos)
+                self.schedule.add(trap)
+            else:
+                # 食物資源エリアがなければランダムに配置
+                x = self.random.randrange(self.width)
+                y = self.random.randrange(self.height)
+                trap = Trap(self.next_id(), (x, y), self)
+                self.grid.place_agent(trap, (x, y))
+                self.schedule.add(trap)
 
 
 
@@ -246,8 +246,15 @@ class KyonModel(mesa.Model):
                 self.grid.place_agent(trap, (x, y))
                 self.schedule.add(trap)
 
+    def get_distance(self, pos1, pos2):
+        """
+        2つの座標間のユークリッド距離を計算する。
+        pos1, pos2はタプル (x, y) の形式。
+        """
+        dx = abs(pos1[0] - pos2[0])
+        dy = abs(pos1[1] - pos2[1])
+        return math.sqrt(dx ** 2 + dy ** 2)    
 
-                        
     def step(self):
         self.schedule.step()
  
@@ -263,38 +270,27 @@ class KyonModel(mesa.Model):
         self.born_kyons.append(self.schedule.get_type_count(Kyon, lambda x: x.kyon_reproduce_count))
         self.kyon_increase.append(self.increased_kyon)        
  
-
-        
-        #self.eaten_grasses.append(self.schedule.get_type_count(Kyon, lambda x: x.is_eat))
-
-            
-
-        
+       
         self.counter += 1
 
-        if self.counter == 365*6:
+        if self.counter == 365*6:  # シュミレーションの期間
             df_result = pd.DataFrame({
                 "kyon_nums": self.kyon_nums,
                 "captured_kyons": self.captured_kyons,
                 "dead_kyons": self.dead_kyons,
                 "born_kyons": self.born_kyons,
-                #"eaten_grasses": self.eaten_grasses,
                 "increase": self.kyon_increase
             })
-
-
-
-            print(df_result)
             
-             # 罠の張り方を表す変数を設定
-#            placement_method = "food_resource"  # 食物資源エリアの周りに罠を設置する場合
-            placement_method = "sparse_vegetation"  # 植生の薄いエリアに罠を設置する場合
-#            placement_method = "random"  # ランダムに罠を設置する場合
+            print(df_result)
 
-            # ファイル名を「罠の張り方、罠の初期数、キョンの初期数、罠の回復ステップ数、シミュレーションカウンター」にする
-            file_path = f"results/{placement_method}_{self.initial_traps}_{self.initial_kyon}_recovery_{self.trap_recovery_turns}_result_1.csv"
-
-            # ファイルに結果を保存
+            
+            # 結果をファイルに保存
+            placement_method = self.placement_method  
+            
+            # 選択した罠の設置方法に応じてファイル名を変更
+            file_path = f"results/{placement_method}_{self.initial_traps}_{self.initial_kyon}_recovery{self.trap_recovery_turns}__{self.base_success_rate}_result_1.csv"  #{self.trap_recovery_turns}_
             df_result.to_csv(file_path)
 
             self.running = False
+

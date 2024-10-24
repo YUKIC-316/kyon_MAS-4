@@ -1,5 +1,4 @@
 import mesa
-
 from kyon.agents import Trap, Kyon, VegetationDensity, FoodResourceArea
 from kyon.model import KyonModel
 
@@ -11,15 +10,15 @@ def kyon_portrayal(agent):
 
     if isinstance(agent, Kyon):
         portrayal["Shape"] = "kyon/resources/kyon.png"
-        portrayal["scale"] = 0.9
-        portrayal["Layer"] = 2
+        portrayal["scale"] = 0.8
+        portrayal["Layer"] = 3
         portrayal["text"] = round(agent.after_birth, 1)
         portrayal["text_color"] = "Black"
 
     elif isinstance(agent, Trap):
         portrayal["Shape"] = "kyon/resources/hunter.png"
         portrayal["scale"] = 0.9
-        portrayal["Layer"] = 3
+        portrayal["Layer"] = 4
 
 
     elif isinstance(agent, VegetationDensity):
@@ -35,7 +34,6 @@ def kyon_portrayal(agent):
         portrayal["w"] = 1
         portrayal["h"] = 1
         
-        
     elif isinstance(agent, FoodResourceArea):
         portrayal["Color"] = ["#FFD700", "#FFEC8B", "#FFFACD"]  # 食物資源エリアを黄色で表示
         portrayal["Shape"] = "rect"
@@ -43,68 +41,40 @@ def kyon_portrayal(agent):
         portrayal["Layer"] = 1
         portrayal["w"] = 1
         portrayal["h"] = 1
-    
-    
+
     return portrayal
 
 # キャンバス要素を作成
-canvas_element = mesa.visualization.CanvasGrid(kyon_portrayal, 100, 100, 1000, 1000)
+canvas_element = mesa.visualization.CanvasGrid(kyon_portrayal, 200, 200, 1000, 1000)
 
 # チャート要素を作成
 chart_element = mesa.visualization.ChartModule(
     [
-        # {"Label": "Wolves", "Color": "#AA0000"},  # ラベル「Wolves」を表示する
         {"Label": "Kyon", "Color": "#666666"},  # ラベル「Kyon」を表示する
-        # {"Label": "EatenGrass", "Color": "#00AA00"},  # ラベル「EatenGrass」を表示する
     ]
 )
 
 # チャート要素2を作成
 chart_element2 = mesa.visualization.ChartModule(
     [
-        {"Label": "BornKyon", "Color": "#00AA00"},  # 「生まれたキョン」を表示する
-        {"Label": "DeadinLifeKyon", "Color": "#666666"},  # 「寿命で死んだキョン」を表示する
+        #{"Label": "BornKyon", "Color": "#00AA00"},  # 「生まれたキョン」を表示する
+        #{"Label": "DeadinLifeKyon", "Color": "#666666"},  # 「寿命で死んだキョン」を表示する
         {"Label": "CapturedKyon", "Color": "#AA0000"},  # 「トラップに捕まったキョン」を表示する
     ]
 )
 
-# チャート要素3を作成
-#chart_element3 = mesa.visualization.ChartModule(
-    #[
-        #{"Label": "EatenGrass", "Color": "#00AA00"},  # 「食べられた草」を表示する
-    #]
-#)
-
 # モデルパラメータの定義
 model_params = {
-    # 以下の行は、StaticTextの例です。
     "title": mesa.visualization.StaticText("パラメータ:"),
-    # "grass": mesa.visualization.Checkbox("草の有効化", True),
-    #"grass_regrowth_time": mesa.visualization.Slider("草の再成長時間", 2, 1, 10),  
-    "initial_kyon": mesa.visualization.Slider(
-        "初期キョン個体数", 60, 10, 300 
-    ), 
-    #"initial_wolves": mesa.visualization.Slider("初期ハンター個体数", 10, 0, 100),
-    "base_success_rate": mesa.visualization.Slider(
-        "キョン捕獲成功率", 0.06, 0.001, 1.0, 0.001
-    ),
+    "initial_kyon": mesa.visualization.Slider("初期キョン個体数", 60, 0, 300), 
+    "initial_traps": mesa.visualization.Slider("初期罠数", 60, 0, 1000), 
+    "base_success_rate": mesa.visualization.Slider("キョン捕獲成功率", 0.05, 0, 1, 0.01),
+    "placement_method": mesa.visualization.Choice("罠の配置方法", value="random", choices=["random", "sparse_vegetation", "food_resource"]),
     "simulation_counter": mesa.visualization.Slider("シミュレーションカウンター", 1, 1, 10),
-    # "wolf_reproduce": mesa.visualization.Slider(
-    #     "ハンターの再生産率",
-    #     0.0,
-    #     0.0,
-    #     1.0,
-    #     0.01,
-    #     description="ハンターエージェントが再生産する割合。",
-    # ),
-    # "wolf_gain_from_food": mesa.visualization.Slider(
-    #     "ハンターの食物から得るエネルギー", 0, 0, 50
-    # ),
-    # "kyon_gain_from_food": mesa.visualization.Slider("キョンの食物から得るエネルギー", 4, 1, 10),
 }
 
 # サーバーの設定
 server = mesa.visualization.ModularServer(
-    KyonModel, [canvas_element, chart_element, chart_element2, ], "キョン繁殖シミュレーション", model_params
-)
-server.port = 8536
+    KyonModel, [canvas_element, chart_element, chart_element2], "キョン繁殖シミュレーション", model_params
+    )
+server.port = 8552
