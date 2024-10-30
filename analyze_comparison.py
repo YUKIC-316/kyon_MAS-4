@@ -2,14 +2,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # 罠の張り方の異なる3種類の平均データファイルを読み込む
-methods = ['random', 'sparse_vegetation', 'food_resource']  # 罠の張り方の種類
-colors = ['blue', 'green', 'red']  # 各張り方に対するグラフの色
+methods = ['random', 'food_resource']  # 罠の張り方の種類 'dense_vegetation',
+colors = ['blue',  'red']  # 各張り方に対するグラフの色'green',
 
 # 各張り方の平均データを読み込む (ファイル名が変わったらそれに対応すること忘れずに：罠の張り方、罠数、キョン数、回復数)
 average_data_files = {
-    'random': 'results/average_random_100_60_recovery_0.csv',
-    'sparse_vegetation': 'results/average_sparse_vegetation_100_60_recovery_0.csv',
-    'food_resource': 'results/average_food_resource_100_60_recovery_0.csv'
+    'random': 'results/average_random_150_250_recovery0_0.05.csv',
+   # 'dense_vegetation': 'results/average_dense_vegetation_100_60_recovery_0.csv',
+    'food_resource': 'results/average_food_resource_150_250_recovery0_0.05.csv'
 }
 
 # グラフ化

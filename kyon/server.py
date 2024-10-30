@@ -1,5 +1,5 @@
 import mesa
-from kyon.agents import Trap, Kyon, VegetationDensity, FoodResourceArea
+from kyon.agents import Trap, Kyon, VegetationDensity, FoodResourceArea, BeastPath
 from kyon.model import KyonModel
 
 def kyon_portrayal(agent):
@@ -42,9 +42,19 @@ def kyon_portrayal(agent):
         portrayal["w"] = 1
         portrayal["h"] = 1
 
+    elif isinstance(agent, BeastPath):
+        portrayal["Color"] = ["#8B4513"]  # 獣道を茶色で表示
+        portrayal["Shape"] = "rect"
+        portrayal["Filled"] = "true"
+        portrayal["Layer"] = 2
+        portrayal["w"] = 1
+        portrayal["h"] = 1
+
+
     return portrayal
 
 # キャンバス要素を作成
+#canvas_element = mesa.visualization.CanvasGrid(kyon_portrayal, 400, 400, 1200, 1200)
 canvas_element = mesa.visualization.CanvasGrid(kyon_portrayal, 200, 200, 1000, 1000)
 
 # チャート要素を作成
@@ -59,22 +69,34 @@ chart_element2 = mesa.visualization.ChartModule(
     [
         #{"Label": "BornKyon", "Color": "#00AA00"},  # 「生まれたキョン」を表示する
         #{"Label": "DeadinLifeKyon", "Color": "#666666"},  # 「寿命で死んだキョン」を表示する
-        {"Label": "CapturedKyon", "Color": "#AA0000"},  # 「トラップに捕まったキョン」を表示する
+        #{"Label": "CapturedKyon", "Color": "#AA0000"},  # 「トラップに捕まったキョン」を表示する
     ]
 )
 
 # モデルパラメータの定義
 model_params = {
     "title": mesa.visualization.StaticText("パラメータ:"),
+    #"initial_kyon": mesa.visualization.Slider("初期キョン個体数", 250, 0, 300), 
     "initial_kyon": mesa.visualization.Slider("初期キョン個体数", 60, 0, 300), 
-    "initial_traps": mesa.visualization.Slider("初期罠数", 60, 0, 1000), 
+    #"initial_traps": mesa.visualization.Slider("初期罠数", 150, 0, 1000), 
+    "initial_traps": mesa.visualization.Slider("初期罠数", 25, 0, 1000),
     "base_success_rate": mesa.visualization.Slider("キョン捕獲成功率", 0.05, 0, 1, 0.01),
-    "placement_method": mesa.visualization.Choice("罠の配置方法", value="random", choices=["random", "sparse_vegetation", "food_resource"]),
+    "placement_method": mesa.visualization.Choice("罠の配置方法", value="random", choices=["random", "dense_vegetation", "food_resource"]),
     "simulation_counter": mesa.visualization.Slider("シミュレーションカウンター", 1, 1, 10),
 }
 
 # サーバーの設定
+#server = mesa.visualization.ModularServer(
+#    KyonModel, [ chart_element], "キョン繁殖シミュレーション", model_params
+#    )
+
 server = mesa.visualization.ModularServer(
     KyonModel, [canvas_element, chart_element, chart_element2], "キョン繁殖シミュレーション", model_params
     )
-server.port = 8552
+
+
+
+
+server.port = 8602
+
+

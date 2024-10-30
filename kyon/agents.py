@@ -30,18 +30,27 @@ class Kyon(RandomWalker):
             # 罠を避けている期間中は罠に近づかない
             self.random_move()  # ランダムに移動して罠から離れる
             self.avoid_trap_steps += 1
-            if self.avoid_trap_steps >= 7:  # 罠を避ける期間が終了したらリセット
+            if self.avoid_trap_steps >= 7:  # 罠を避ける期間7stepsが終了したらリセット
                 self.avoiding_trap = False
                 self.avoid_trap_steps = 0
             
             return  # 他の処理は行わない
 
+        # 獣道を探索し、近くにある場合は引き寄せられる
+        nearest_beast_path = self.find_nearest_beast_path()
+        if nearest_beast_path and self.model.get_distance(self.pos, nearest_beast_path.pos) <= 5:
+            if self.random.random() < 0.8:  # 80%の確率で獣道に向かう
+                self.move_towards(nearest_beast_path.pos)
+            else:
+                self.random_move()
+            return  # 獣道に引き寄せられた場合はここで終了
+        
         # 食物資源エリアを避けている期間かどうかを確認
         if self.avoiding_food_area:
             # 食物資源エリアを避ける期間中は近づかない
             self.random_move()  # ランダムに移動してエリアを避ける
             self.avoid_food_area_steps += 1
-            if self.avoid_food_area_steps >= 5:  # 5ステップ避けたらリセット
+            if self.avoid_food_area_steps >= 7:  # 7ステップ避けたらリセット
                 self.avoiding_food_area = False
                 self.avoid_food_area_steps = 0
             return  # 他の処理は行わない
@@ -49,68 +58,59 @@ class Kyon(RandomWalker):
         # 現在のセル情報を取得
         current_cell = self.model.grid.get_cell_list_contents([self.pos])
 
-        # キョンが罠に引き寄せられる特性
-        nearest_trap = self.find_nearest_trap()
-        # 罠が近くにある場合、通常は近づくが、罠を避けている場合はランダムに移動
-        if nearest_trap and self.model.get_distance(self.pos, nearest_trap.pos) <= 5:
-            if not self.avoiding_trap:  # 罠を避けていない場合のみ近づく
-                if self.random.random() < 0.7:  # 70%の確率で罠に近づく
-                    self.move_towards(nearest_trap.pos)
-                else:
-                    self.random_move()
-
-                # 罠に入った場合、捕獲をチェック
-                if self.check_for_trap():
-                    return  # 捕獲された場合は終了
-
-
         # キョンが食物資源エリア内にいるかを確認
         in_food_area = any(isinstance(obj, FoodResourceArea) for obj in current_cell)
-
         # 食物資源エリア内にいる場合の動き
         if in_food_area:
-            self.steps_in_food_area += 1
-            if self.steps_in_food_area < 3:   # 食物資源エリアに3ターン以内で滞在
-                self.random_move()
-            else:
-                # エリアから出て、5ステップ避けるフラグを立てる
-                self.avoiding_food_area = True
-                self.steps_in_food_area = 0
-                self.random_move()
+            self.avoiding_food_area = True  # 食物資源エリアを回避
+            self.random_move()  # 食物エリアからランダムに移動
         else:
-            # 食物資源エリア外にいる場合
-            self.steps_in_food_area = 0
+            # 近くの食物エリアがあれば70%で向かう
             nearest_food_area = self.find_nearest_food_area()
-            if nearest_food_area:
-                distance_to_food_area = self.model.get_distance(self.pos, nearest_food_area.pos)
-                if distance_to_food_area <= 5:
+            if nearest_food_area and self.model.get_distance(self.pos, nearest_food_area.pos) <= 10:
+                if not self.avoiding_food_area:
                     if self.random.random() < 0.7:  # 70%の確率で食物資源エリアに向かう
                         self.move_towards(nearest_food_area.pos)
                     else:
                         self.random_move()
-                else:
-                    if self.random.random() < 0.2:  # 20%の確率で遠くから食物資源エリアに向かう
-                        self.move_towards(nearest_food_area.pos)
-                    else:
-                        self.random_move()
+                else:                    
+                    self.random_move()               
             else:
                 self.random_move()
 
-
         # 死亡処理
-        if self.random.random() < (1 / 1000) * (self.after_birth / 540):
+        age_in_days = self.after_birth
+
+        # 年齢に基づく死亡率の計算
+        if age_in_days < 1825:  # 5歳未満
+            death_probability = 0.0001
+        elif age_in_days < 2555:  # 5歳から7歳
+            death_probability = 0.0001 + ((age_in_days - 1825) / 755) * 0.005
+        else:  # 7歳以上
+            death_probability = 1.0
+
+        # ランダムに基づく死亡判定
+        if self.random.random() < death_probability:
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
             return  # 死亡した場合は以降の処理を行わない
 
-        # 繁殖処理
-        if self.after_birth >= 150 and self.random.random() < (1/2) * (1/210):
-            lamb = Kyon(
-                self.model.next_id(), self.pos, self.model, self.moore, kyon_reproduce_count=True, after_birth=0
-            )
-            self.model.grid.place_agent(lamb, self.pos)
-            self.model.schedule.add(lamb)
-            self.kyon_reproduce_count = True
+
+
+        # 出産処理
+        if 180 <= age_in_days :  # 出産可能な年齢範囲
+            
+            # ランダムに基づく出産判定
+            if self.random.random() < (1/2) * (1/210):
+                lamb = Kyon(
+                    self.model.next_id(), self.pos, self.model, self.moore, kyon_reproduce_count=True, after_birth=0
+                )
+                self.model.grid.place_agent(lamb, self.pos)
+                self.model.schedule.add(lamb)
+                self.kyon_reproduce_count = True
+
+
+
 
     def check_for_trap(self):
         """
@@ -150,20 +150,20 @@ class Kyon(RandomWalker):
                 min_distance = distance
                 nearest_food_area = food_area
         return nearest_food_area
-
-    def find_nearest_trap(self):
+  
+    def find_nearest_beast_path(self):
         """
-        最も近い罠を見つけ、その位置を返す
+        最も近い獣道を見つけ、その位置を返す。
         """
         min_distance = float("inf")
-        nearest_trap = None
-        for trap in [agent for agent in self.model.schedule.agents if isinstance(agent, Trap)]:
-            distance = self.model.get_distance(self.pos, trap.pos)
+        nearest_path = None
+        for path in [agent for agent in self.model.schedule.agents if isinstance(agent, BeastPath)]:
+            distance = self.model.get_distance(self.pos, path.pos)
             if distance < min_distance:
                 min_distance = distance
-                nearest_trap = trap
-        return nearest_trap    
-       
+                nearest_path = path
+        return nearest_path      
+    
 #    def move_towards(self, target_pos):
 #        """
 #        指定された位置に向かって移動する
@@ -172,8 +172,16 @@ class Kyon(RandomWalker):
 #        next_step = min(possible_steps, key=lambda x: self.model.get_distance(x, target_pos))
 #        self.model.grid.move_agent(self, next_step)
 
+class BeastPath(mesa.Agent):
+    """
+    フィールド上の獣道を表すエージェント。キョンは獣道に引き寄せられる。
+    """
+    def __init__(self, unique_id, pos, model):
+        super().__init__(unique_id, model)
+        self.pos = pos
 
-
+    def step(self):
+        pass
 
 class Trap(mesa.Agent):
     """
@@ -225,8 +233,7 @@ class Trap(mesa.Agent):
         # 食物資源エリアでの成功率を調整
         in_food_area = any(isinstance(obj, FoodResourceArea) for obj in current_cell)
         if in_food_area:
-            success_rate *= 1.5
-
+            success_rate *= 1.5    #1.5から変更
         return success_rate
 
 
@@ -253,3 +260,4 @@ class FoodResourceArea(mesa.Agent):
 
     def step(self):
         pass
+
